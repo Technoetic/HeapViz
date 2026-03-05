@@ -1,28 +1,37 @@
-import pandas as pd
-import math
+import httpx
 
 
 class DataService:
     _cache: list[dict] | None = None
 
     @classmethod
-    def load(cls, csv_path: str) -> list[dict]:
-        df = pd.read_csv(csv_path)
-        cols_to_keep = [
-            "date", "session", "gender", "format", "nat", "start_no",
-            "name", "run", "status", "start_time", "int1", "int2",
-            "int3", "int4", "finish", "speed",
-        ]
-        existing = [c for c in cols_to_keep if c in df.columns]
-        df = df[existing]
+    async def load(cls, supabase_url: str, supabase_key: str) -> list[dict]:
+        headers = {
+            "apikey": supabase_key,
+            "Authorization": f"Bearer {supabase_key}",
+        }
+        select = "date,session,gender,format,nat,start_no,name,run,status,start_time,int1,int2,int3,int4,finish,speed"
 
-        records = df.to_dict(orient="records")
-        for rec in records:
-            for k, v in rec.items():
-                if isinstance(v, float) and math.isnan(v):
-                    rec[k] = None
-        cls._cache = records
-        return records
+        all_rows = []
+        offset = 0
+        limit = 1000
+
+        async with httpx.AsyncClient() as client:
+            while True:
+                resp = await client.get(
+                    f"{supabase_url}/rest/v1/skeleton_records",
+                    params={"select": select, "order": "id", "offset": offset, "limit": limit},
+                    headers=headers,
+                )
+                resp.raise_for_status()
+                rows = resp.json()
+                all_rows.extend(rows)
+                if len(rows) < limit:
+                    break
+                offset += limit
+
+        cls._cache = all_rows
+        return all_rows
 
     @classmethod
     def get_records(cls) -> list[dict]:

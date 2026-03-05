@@ -5,15 +5,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from backend.config import CORS_ORIGINS, CSV_PATH, STATIC_DIR
+from backend.config import CORS_ORIGINS, SUPABASE_URL, SUPABASE_KEY, STATIC_DIR
 from backend.data_service import DataService
 from backend.models import SkeletonRecord
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    DataService.load(CSV_PATH)
-    print(f"Loaded {len(DataService.get_records())} records from {CSV_PATH}")
+    records = await DataService.load(SUPABASE_URL, SUPABASE_KEY)
+    print(f"Loaded {len(records)} records from Supabase")
     yield
 
 
