@@ -15,6 +15,8 @@ class DataStore {
     this._buildIndex();
   }
 
+  getAllRecords() { return this.data; }
+
   _buildIndex() {
     for (const r of this.data) {
       const name = r.name;

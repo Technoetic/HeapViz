@@ -152,7 +152,7 @@ class UIController {
   }
 
   #restoreFilters() {
-    for (const prefix of ['pred', 'analysis', 'trackmap']) {
+    for (const prefix of ['analysis', 'trackmap']) {
       try {
         const saved = sessionStorage.getItem(`skel-filter-${prefix}`);
         if (!saved) continue;
@@ -171,7 +171,7 @@ class UIController {
     if (typeof Notyf !== 'undefined') {
       this.notyf = new Notyf({ duration: UIController.TIMING.TOAST, position: { x: 'right', y: 'top' }, dismissible: true, ripple: true });
     }
-    for (const prefix of ['pred', 'analysis', 'trackmap']) {
+    for (const prefix of ['analysis', 'trackmap']) {
       this.#populateFilterDropdowns(prefix);
       this.#populatePlayerSelect(`${prefix}-player-select`);
       this.#bindPlayerFilterEvents(prefix);
@@ -347,22 +347,22 @@ class UIController {
 
   // ─── Tab 1: 예측 모델 ────────────────────────────────────
   #renderPredictionTab() {
-    const sel = this.#el('pred-player-select');
-    const name = sel ? sel.value : '';
     const resultEl = this.#el('pred-result');
     const compareEl = document.getElementById('pred-model-compare');
+    const gender = this.#el('pred-gender-filter')?.value || '';
 
-    if (!name) {
-      if (resultEl) resultEl.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🛷</div><div class="empty-state-text">선수를 선택하고 예측을 실행하세요</div></div>';
+    // 성별 필터 기반 전체 데이터 사용
+    const allRecords = this.ds.getAllRecords ? this.ds.getAllRecords() : this.ds.records || [];
+    const filtered = gender ? allRecords.filter(r => r.gender === gender) : allRecords;
+    const okRecords = filtered.filter(r => r.status === 'OK' && r.finish != null);
+
+    if (okRecords.length < 3) {
+      if (resultEl) resultEl.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🛷</div><div class="empty-state-text">성별을 선택하고 예측을 실행하세요</div></div>';
       if (compareEl) compareEl.style.display = 'none';
       return;
     }
 
-    const records = this.ds.getPlayerRecords(name);
-    const okRecords = records.filter(r => r.status === 'OK' && r.finish != null);
     this.predModel.trainAll(okRecords);
-
-    const stats = this.analyzer.getStats(name);
     const comparison = this.predModel.getModelComparison();
 
     // 모델 비교 카드 표시
@@ -379,12 +379,15 @@ class UIController {
       `;
     }
 
-    if (resultEl && stats) {
+    if (resultEl) {
+      const finishes = okRecords.map(r => parseFloat(r.finish)).filter(v => v > 0);
+      const best = finishes.length ? Math.min(...finishes) : 0;
+      const avg = finishes.length ? finishes.reduce((s, v) => s + v, 0) / finishes.length : 0;
       resultEl.innerHTML = `
         <div class="stats-grid">
-          <div class="stat-card"><div class="stat-value">${stats.count}</div><div class="stat-label">총 기록수</div></div>
-          <div class="stat-card"><div class="stat-value">${stats.best.toFixed(3)}</div><div class="stat-label">최고 기록(초)</div></div>
-          <div class="stat-card"><div class="stat-value">${stats.avg.toFixed(3)}</div><div class="stat-label">평균 기록(초)</div></div>
+          <div class="stat-card"><div class="stat-value">${okRecords.length}</div><div class="stat-label">학습 데이터</div></div>
+          <div class="stat-card"><div class="stat-value">${best.toFixed(3)}</div><div class="stat-label">최고 기록(초)</div></div>
+          <div class="stat-card"><div class="stat-value">${avg.toFixed(3)}</div><div class="stat-label">평균 기록(초)</div></div>
         </div>
       `;
       UIController.animateCountUp(resultEl);
@@ -447,8 +450,9 @@ class UIController {
     const btn = document.getElementById('pred-run-btn');
     if (btn) btn.addEventListener('click', () => this.#onPredictRun());
 
-    const sel = document.getElementById('pred-player-select');
-    if (sel) sel.addEventListener('change', () => this.#renderPredictionTab());
+    // 성별 변경 시 탭 갱신
+    const genderSel = document.getElementById('pred-gender-filter');
+    if (genderSel) genderSel.addEventListener('change', () => this.#renderPredictionTab());
 
     // 모델 드롭다운 전환
     const modelSel = document.getElementById('pred-model-select');
@@ -469,26 +473,35 @@ class UIController {
   }
 
   #onPredictRun() {
-    const sel = this.#el('pred-player-select');
-    const name = sel ? sel.value : '';
     const resultEl = this.#el('pred-result');
-    if (!name || !resultEl) {
-      if (resultEl) resultEl.innerHTML = UIController.errorHTML('선수 미선택', '선수를 선택해주세요.');
+    if (!resultEl) return;
+
+    const gender = this.#el('pred-gender-filter')?.value || '';
+    const allRecords = this.ds.getAllRecords ? this.ds.getAllRecords() : this.ds.records || [];
+    const filtered = gender ? allRecords.filter(r => r.gender === gender) : allRecords;
+    const okRecords = filtered.filter(r => r.status === 'OK' && r.finish != null);
+
+    if (okRecords.length < 3) {
+      resultEl.innerHTML = UIController.errorHTML('데이터 부족', '성별을 선택하거나 데이터가 충분한지 확인하세요.');
       return;
     }
 
-    const records = this.ds.getPlayerRecords(name);
-    const okRecords = records.filter(r => r.status === 'OK' && r.finish != null);
-    const stats = this.analyzer.getStats(name);
-
     this.predModel.trainAll(okRecords);
+
+    // 통계 요약 (선수 대신 전체)
+    const finishes = okRecords.map(r => parseFloat(r.finish)).filter(v => v > 0);
+    const stats = {
+      count: okRecords.length,
+      best: finishes.length ? Math.min(...finishes) : 0,
+      avg: finishes.length ? finishes.reduce((s, v) => s + v, 0) / finishes.length : 0,
+    };
 
     switch (this._selectedModel) {
       case 'simple':
         this.#runSimplePrediction(okRecords, stats, resultEl);
         break;
       case 'multi':
-        this.#runMultiPrediction(okRecords, resultEl, name);
+        this.#runMultiPrediction(okRecords, resultEl, null);
         break;
       case 'segment':
         this.#runSegmentPrediction(okRecords, resultEl);
@@ -601,7 +614,6 @@ class UIController {
         <p class="pred-value">예측 Finish: <strong>${pred.predicted.toFixed(3)}초</strong></p>
         <p style="color:var(--c-text-muted)">Leverage CI: ${pred.lower.toFixed(3)} ~ ${pred.upper.toFixed(3)}초</p>
         ${bs ? `<p style="color:var(--c-text-muted)">Bootstrap 95% CI: ${bs.ci95Lower.toFixed(3)} ~ ${bs.ci95Upper.toFixed(3)}초</p>` : ''}
-        ${offset !== 0 ? `<p style="color:var(--c-text-muted)">👤 선수 개인 보정: <strong>${offset > 0 ? '+' : ''}${offset.toFixed(3)}초</strong></p>` : ''}
         <p class="confidence-hint">${this.#getConfidenceHint(multiInfo.r2, multiInfo.n)}</p>
       </div>
       <details>
@@ -1319,7 +1331,6 @@ class UIController {
     const state = { tab };
     // 현재 탭의 선수 선택 저장
     const selectors = {
-      prediction: 'pred-player-select',
       analysis: 'analysis-player-select',
       trackmap: 'trackmap-player-select',
     };
@@ -1348,7 +1359,6 @@ class UIController {
       }
       if (state.player && tab) {
         const selectors = {
-          prediction: 'pred-player-select',
           analysis: 'analysis-player-select',
           trackmap: 'trackmap-player-select',
         };

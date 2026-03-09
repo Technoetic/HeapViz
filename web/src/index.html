@@ -41,13 +41,17 @@
   <section id="tab-prediction" class="tab-content active" role="tabpanel">
     <h2 class="sr-only">예측 모델</h2>
     <div class="panel">
-      <select id="pred-gender-filter" aria-label="성별 필터" class="filter-select-sm">
-        <option value="">전체 성별</option>
+      <select id="pred-gender-filter" aria-label="성별 선택" class="filter-select-sm">
+        <option value="">성별 선택</option>
+        <option value="M">남자</option>
+        <option value="F">여자</option>
       </select>
-      <select id="pred-nat-filter" aria-label="국가 필터" class="filter-select-sm">
-        <option value="">전체 국가</option>
-      </select>
-      <select id="pred-player-select" aria-label="선수 선택" class="filter-select-sm"></select>
+      <label style="display:inline-flex;align-items:center;gap:0.3rem">키(cm):
+        <input id="pred-height" type="number" step="0.1" min="140" max="210" placeholder="175" style="width:75px" class="filter-select-sm">
+      </label>
+      <label style="display:inline-flex;align-items:center;gap:0.3rem">몸무게(kg):
+        <input id="pred-weight" type="number" step="0.1" min="40" max="130" placeholder="75" style="width:75px" class="filter-select-sm">
+      </label>
       <select id="pred-model-select" aria-label="모델 선택">
         <option value="simple">단순 선형</option>
         <option value="multi">다중 선형</option>
