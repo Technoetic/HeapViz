@@ -11,6 +11,7 @@ class DashboardController {
     this.#bindEvents();
     this.#populateSelectors();
     this.#renderTrackMap();
+    this.#fetchWeather();
   }
 
   #renderTrackMap() {
@@ -33,11 +34,7 @@ class DashboardController {
     const player = this.#el('dash-player');
     if (player) player.addEventListener('change', () => this.#onPlayerChange());
 
-    // 환경 입력 변경 시 자동 계산
-    ['dash-airtemp', 'dash-humidity', 'dash-pressure'].forEach(id => {
-      const el = this.#el(id);
-      if (el) el.addEventListener('input', () => this.#updateCalc());
-    });
+    // 환경 데이터는 자동 fetch (readOnly) — 수동 리스너 불필요
   }
 
   #populateSelectors() {
@@ -86,6 +83,26 @@ class DashboardController {
     // 목표 스타트 자동 설정
     const targetEl = this.#el('dash-target-start');
     if (targetEl && !targetEl.value) targetEl.value = avgStart;
+  }
+
+  async #fetchWeather() {
+    // 평창 알펜시아 좌표: 37.6584°N, 128.7253°E
+    const url = 'https://api.open-meteo.com/v1/forecast?latitude=37.6584&longitude=128.7253&current=temperature_2m,relative_humidity_2m,surface_pressure&timezone=Asia/Seoul';
+    try {
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(resp.status);
+      const data = await resp.json();
+      const c = data.current;
+      const airEl = this.#el('dash-airtemp');
+      const humEl = this.#el('dash-humidity');
+      const presEl = this.#el('dash-pressure');
+      if (airEl) { airEl.value = c.temperature_2m; airEl.readOnly = true; }
+      if (humEl) { humEl.value = c.relative_humidity_2m; humEl.readOnly = true; }
+      if (presEl) { presEl.value = c.surface_pressure; presEl.readOnly = true; }
+      this.#updateCalc();
+    } catch (e) {
+      console.warn('Weather fetch failed:', e);
+    }
   }
 
   #updateCalc() {

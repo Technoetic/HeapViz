@@ -89,14 +89,14 @@
         </div>
 
         <div class="dash-card">
-          <h4>🌡️ 실시간 환경 데이터 <span style="font-size:0.7rem;color:#556">(Pyeongchang)</span></h4>
+          <h4>🌡️ 실시간 환경 데이터 <span style="font-size:0.7rem;color:#556">(평창 알펜시아)</span></h4>
           <div class="dash-input-row">
-            <label style="flex:1">기온 (°C)<input id="dash-airtemp" type="number" step="0.1" placeholder="-7.2"></label>
-            <label style="flex:1">습도 (%)<input id="dash-humidity" type="number" step="1" placeholder="65"></label>
-            <label style="flex:1">기압 (hPa)<input id="dash-pressure" type="number" step="0.1" placeholder="935"></label>
+            <label style="flex:1">기온 (°C)<input id="dash-airtemp" type="number" step="0.1" readonly placeholder="로딩 중..."></label>
+            <label style="flex:1">습도 (%)<input id="dash-humidity" type="number" step="1" readonly placeholder="로딩 중..."></label>
+            <label style="flex:1">기압 (hPa)<input id="dash-pressure" type="number" step="0.1" readonly placeholder="로딩 중..."></label>
           </div>
           <div id="dash-calc-values">
-            <div class="dash-calc-row"><span>입력 대기 중...</span></div>
+            <div class="dash-calc-row"><span>날씨 데이터 로딩 중...</span></div>
           </div>
         </div>
 
@@ -4440,6 +4440,7 @@ class TableRenderer {
     this.#bindEvents();
     this.#populateSelectors();
     this.#renderTrackMap();
+    this.#fetchWeather();
   }
 
   #renderTrackMap() {
@@ -4462,11 +4463,7 @@ class TableRenderer {
     const player = this.#el('dash-player');
     if (player) player.addEventListener('change', () => this.#onPlayerChange());
 
-    // 환경 입력 변경 시 자동 계산
-    ['dash-airtemp', 'dash-humidity', 'dash-pressure'].forEach(id => {
-      const el = this.#el(id);
-      if (el) el.addEventListener('input', () => this.#updateCalc());
-    });
+    // 환경 데이터는 자동 fetch (readOnly) — 수동 리스너 불필요
   }
 
   #populateSelectors() {
@@ -4515,6 +4512,26 @@ class TableRenderer {
     // 목표 스타트 자동 설정
     const targetEl = this.#el('dash-target-start');
     if (targetEl && !targetEl.value) targetEl.value = avgStart;
+  }
+
+  async #fetchWeather() {
+    // 평창 알펜시아 좌표: 37.6584°N, 128.7253°E
+    const url = 'https://api.open-meteo.com/v1/forecast?latitude=37.6584&longitude=128.7253&current=temperature_2m,relative_humidity_2m,surface_pressure&timezone=Asia/Seoul';
+    try {
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(resp.status);
+      const data = await resp.json();
+      const c = data.current;
+      const airEl = this.#el('dash-airtemp');
+      const humEl = this.#el('dash-humidity');
+      const presEl = this.#el('dash-pressure');
+      if (airEl) { airEl.value = c.temperature_2m; airEl.readOnly = true; }
+      if (humEl) { humEl.value = c.relative_humidity_2m; humEl.readOnly = true; }
+      if (presEl) { presEl.value = c.surface_pressure; presEl.readOnly = true; }
+      this.#updateCalc();
+    } catch (e) {
+      console.warn('Weather fetch failed:', e);
+    }
   }
 
   #updateCalc() {
