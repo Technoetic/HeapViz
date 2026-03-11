@@ -140,61 +140,6 @@ body {
 }
 ::selection { background: var(--c-accent); color: var(--c-primary-700); }
 
-/* ===== 탭 바 (헤더 대체) ===== */
-.topbar-tabs {
-  display: flex;
-  gap: var(--sp-1);
-  align-items: center;
-  background: linear-gradient(135deg, #060f1a 0%, #0d2238 60%, var(--c-primary-400) 100%);
-  padding: var(--sp-2) var(--sp-4);
-  flex-shrink: 0;
-  z-index: 100;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.2);
-}
-.tab-btn {
-  padding: 0.35rem 1rem;
-  border: 1.5px solid rgba(255,255,255,0.12);
-  background: rgba(255,255,255,0.04);
-  color: rgba(255,255,255,0.65);
-  border-radius: var(--r-full);
-  cursor: pointer;
-  font-family: var(--font);
-  font-size: 0.8rem;
-  font-weight: 500;
-  transition: all var(--t-normal);
-  position: relative;
-  overflow: hidden;
-  backdrop-filter: blur(8px);
-}
-.tab-btn::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,0.08), transparent);
-  opacity: 0;
-  transition: opacity var(--t-fast);
-}
-.tab-btn:hover {
-  background: rgba(255,255,255,0.1);
-  color: white;
-  border-color: rgba(255,255,255,0.25);
-  transform: translateY(-1px);
-}
-.tab-btn:hover::before { opacity: 1; }
-.tab-btn.active {
-  background: linear-gradient(135deg, #d4941a, var(--c-accent), #f0be40);
-  color: var(--c-primary-700);
-  font-weight: 700;
-  border-color: transparent;
-  box-shadow: 0 3px 18px var(--c-accent-glow), inset 0 1px 0 rgba(255,255,255,0.3);
-  text-shadow: 0 1px 0 rgba(255,255,255,0.2);
-}
-.tab-btn.active::before { opacity: 0; }
-.tab-btn:focus-visible {
-  outline: 3px solid var(--c-accent);
-  outline-offset: 2px;
-}
-
 /* ===== 콘텐츠 영역 ===== */
 #main-content {
   flex: 1;
