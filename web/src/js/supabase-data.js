@@ -20,10 +20,21 @@ async function fetchRecords() {
   return all;
 }
 
+async function fetchAthletes() {
+  const headers = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
+  const url = `${SUPABASE_URL}/rest/v1/athletes?select=athlete_id,name,nat,birth_year,gender,height_cm,weight_kg&order=id`;
+  const resp = await fetch(url, { headers });
+  if (!resp.ok) throw new Error(`Supabase athletes error: ${resp.status}`);
+  return resp.json();
+}
+
 let RAW_DATA = [];
-const _supabaseReady = fetchRecords().then(data => {
-  RAW_DATA = data;
+let ATHLETES = [];
+const _supabaseReady = Promise.all([fetchRecords(), fetchAthletes()]).then(([records, athletes]) => {
+  RAW_DATA = records;
+  ATHLETES = athletes;
 }).catch(err => {
   console.error('Supabase fetch failed:', err);
   RAW_DATA = [];
+  ATHLETES = [];
 });
