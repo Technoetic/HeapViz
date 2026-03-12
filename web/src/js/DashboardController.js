@@ -24,6 +24,10 @@ class DashboardController {
 
   #el(id) { return document.getElementById(id); }
 
+  #resolveAthlete(aid) {
+    return (typeof ATHLETES !== 'undefined' ? ATHLETES : []).find(a => a.athlete_id === aid);
+  }
+
   #bindEvents() {
     const btn = this.#el('dash-predict-btn');
     if (btn) btn.addEventListener('click', () => this.#runPrediction());
@@ -38,24 +42,22 @@ class DashboardController {
     const athletes = typeof ATHLETES !== 'undefined' ? ATHLETES : [];
     const sorted = [...athletes].sort((a, b) => a.athlete_id.localeCompare(b.athlete_id));
     playerEl.innerHTML = '<option value="">선수 선택</option>' + sorted.map(a =>
-      `<option value="${a.name}">${a.athlete_id}</option>`
+      `<option value="${a.athlete_id}">${a.athlete_id}</option>`
     ).join('');
   }
 
   #onPlayerChange() {
-    const name = this.#el('dash-player')?.value;
+    const aid = this.#el('dash-player')?.value;
+    const ath = aid ? this.#resolveAthlete(aid) : null;
     const profileEl = this.#el('dash-profile-info');
     if (!profileEl) return;
 
-    if (!name) { profileEl.innerHTML = ''; return; }
+    if (!ath) { profileEl.innerHTML = ''; return; }
 
     const allRecords = this.ds.getAllRecords ? this.ds.getAllRecords() : this.ds.records || [];
-    const playerRecords = allRecords.filter(r => r.name === name && r.status === 'OK' && r.finish);
+    const playerRecords = allRecords.filter(r => r.name === ath.name && r.status === 'OK' && r.finish);
     const finishes = playerRecords.map(r => parseFloat(r.finish)).filter(v => v > 0);
     const starts = playerRecords.map(r => parseFloat(r.start_time)).filter(v => v > 0);
-
-    // ATHLETES DB에서 프로필 조회
-    const ath = (typeof ATHLETES !== 'undefined' ? ATHLETES : []).find(a => a.name === name);
 
     if (finishes.length === 0 && !ath) { profileEl.innerHTML = '<span style="color:#666">기록 없음</span>'; return; }
 
@@ -196,11 +198,11 @@ class DashboardController {
   }
 
   #getInputs() {
-    const playerName = this.#el('dash-player')?.value || '';
-    const ath = (typeof ATHLETES !== 'undefined' ? ATHLETES : []).find(a => a.name === playerName);
+    const aid = this.#el('dash-player')?.value || '';
+    const ath = aid ? this.#resolveAthlete(aid) : null;
     return {
       gender: ath ? ath.gender : '',
-      player: playerName,
+      player: aid,
       startTime: parseFloat(this.#el('dash-target-start')?.value) || 0,
       airTemp: parseFloat(this.#el('dash-airtemp')?.value) || 5,
       humidity: parseFloat(this.#el('dash-humidity')?.value) || 60,
