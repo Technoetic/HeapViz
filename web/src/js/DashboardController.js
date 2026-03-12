@@ -54,8 +54,13 @@ class DashboardController {
     if (!playerEl || !gender) { if (playerEl) playerEl.innerHTML = '<option value="">선수 선택</option>'; return; }
 
     const allRecords = this.ds.getAllRecords ? this.ds.getAllRecords() : this.ds.records || [];
-    const players = [...new Set(allRecords.filter(r => r.gender === gender && r.name).map(r => r.name))].sort();
-    playerEl.innerHTML = '<option value="">선수 선택</option>' + players.map(p => `<option value="${p}">${p}</option>`).join('');
+    const athletes = typeof ATHLETES !== 'undefined' ? ATHLETES : [];
+    const names = [...new Set(allRecords.filter(r => r.gender === gender && r.name).map(r => r.name))].sort();
+    playerEl.innerHTML = '<option value="">선수 선택</option>' + names.map(name => {
+      const ath = athletes.find(a => a.name === name);
+      const label = ath ? ath.athlete_id : name;
+      return `<option value="${name}">${label}</option>`;
+    }).join('');
   }
 
   #onPlayerChange() {
