@@ -207,7 +207,6 @@ class DashboardController {
       height = ath && ath.height_cm ? parseFloat(ath.height_cm) : null;
       weight = ath && ath.weight_kg ? parseFloat(ath.weight_kg) : null;
     } else {
-      gender = this.#el('dash-gender-manual')?.value || '';
       player = '__general__';
       height = parseFloat(this.#el('dash-height-manual')?.value) || null;
       weight = parseFloat(this.#el('dash-weight-manual')?.value) || null;
@@ -235,17 +234,15 @@ class DashboardController {
       resultEl.innerHTML = '<div style="text-align:center;color:#f44336;padding:1rem">선수를 선택해주세요</div>';
       return;
     }
-    if (this._mode === 'general' && !inp.gender) {
-      resultEl.innerHTML = '<div style="text-align:center;color:#f44336;padding:1rem">성별을 선택해주세요</div>';
-      return;
-    }
     if (!inp.startTime || inp.startTime < 3 || inp.startTime > 8) {
       resultEl.innerHTML = '<div style="text-align:center;color:#f44336;padding:1rem">목표 스타트 시간을 입력해주세요 (3~8초)</div>';
       return;
     }
 
     const allRecords = this.ds.getAllRecords ? this.ds.getAllRecords() : this.ds.records || [];
-    const okRecords = allRecords.filter(r => r.gender === inp.gender && r.status === 'OK' && r.finish);
+    const okRecords = inp.gender
+      ? allRecords.filter(r => r.gender === inp.gender && r.status === 'OK' && r.finish)
+      : allRecords.filter(r => r.status === 'OK' && r.finish);
 
     if (okRecords.length < 5) {
       resultEl.innerHTML = '<div style="text-align:center;color:#f44336;padding:1rem">데이터 부족</div>';
