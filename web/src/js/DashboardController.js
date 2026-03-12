@@ -28,12 +28,32 @@ class DashboardController {
     return (typeof ATHLETES !== 'undefined' ? ATHLETES : []).find(a => a.athlete_id === aid);
   }
 
+  _mode = 'personal'; // 'personal' | 'general'
+
   #bindEvents() {
     const btn = this.#el('dash-predict-btn');
     if (btn) btn.addEventListener('click', () => this.#runPrediction());
 
     const player = this.#el('dash-player');
     if (player) player.addEventListener('change', () => this.#onPlayerChange());
+
+    // 모드 토글
+    const personalBtn = this.#el('dash-mode-personal');
+    const generalBtn = this.#el('dash-mode-general');
+    if (personalBtn) personalBtn.addEventListener('click', () => this.#setMode('personal'));
+    if (generalBtn) generalBtn.addEventListener('click', () => this.#setMode('general'));
+  }
+
+  #setMode(mode) {
+    this._mode = mode;
+    const personalBtn = this.#el('dash-mode-personal');
+    const generalBtn = this.#el('dash-mode-general');
+    const personalFields = this.#el('dash-personal-fields');
+    const generalFields = this.#el('dash-general-fields');
+    if (personalBtn) personalBtn.classList.toggle('active', mode === 'personal');
+    if (generalBtn) generalBtn.classList.toggle('active', mode === 'general');
+    if (personalFields) personalFields.style.display = mode === 'personal' ? '' : 'none';
+    if (generalFields) generalFields.style.display = mode === 'general' ? '' : 'none';
   }
 
   #populateSelectors() {
@@ -177,19 +197,31 @@ class DashboardController {
   }
 
   #getInputs() {
-    const aid = this.#el('dash-player')?.value || '';
-    const ath = aid ? this.#resolveAthlete(aid) : null;
+    let gender = '', player = '', height = null, weight = null;
+
+    if (this._mode === 'personal') {
+      const aid = this.#el('dash-player')?.value || '';
+      const ath = aid ? this.#resolveAthlete(aid) : null;
+      gender = ath ? ath.gender : '';
+      player = aid;
+      height = ath && ath.height_cm ? parseFloat(ath.height_cm) : null;
+      weight = ath && ath.weight_kg ? parseFloat(ath.weight_kg) : null;
+    } else {
+      gender = this.#el('dash-gender-manual')?.value || '';
+      player = '__general__';
+      height = parseFloat(this.#el('dash-height-manual')?.value) || null;
+      weight = parseFloat(this.#el('dash-weight-manual')?.value) || null;
+    }
+
     return {
-      gender: ath ? ath.gender : '',
-      player: aid,
+      gender, player,
       startTime: parseFloat(this.#el('dash-target-start')?.value) || 0,
       airTemp: parseFloat(this.#el('dash-airtemp')?.value) || 5,
       humidity: parseFloat(this.#el('dash-humidity')?.value) || 60,
       pressure: parseFloat(this.#el('dash-pressure')?.value) || 935,
       iceTemp: parseFloat(this.#el('dash-icetemp')?.value) || -7,
       windSpeed: parseFloat(this.#el('dash-windspd')?.value) || 0,
-      height: parseFloat(this.#el('pred-height')?.value) || null,
-      weight: parseFloat(this.#el('pred-weight')?.value) || null,
+      height, weight,
     };
   }
 
@@ -199,8 +231,12 @@ class DashboardController {
     const coachEl = this.#el('dash-coaching-tips');
     if (!resultEl) return;
 
-    if (!inp.player) {
+    if (this._mode === 'personal' && !inp.player) {
       resultEl.innerHTML = '<div style="text-align:center;color:#f44336;padding:1rem">선수를 선택해주세요</div>';
+      return;
+    }
+    if (this._mode === 'general' && !inp.gender) {
+      resultEl.innerHTML = '<div style="text-align:center;color:#f44336;padding:1rem">성별을 선택해주세요</div>';
       return;
     }
     if (!inp.startTime || inp.startTime < 3 || inp.startTime > 8) {
