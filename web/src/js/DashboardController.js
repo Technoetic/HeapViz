@@ -49,43 +49,22 @@ class DashboardController {
   #onPlayerChange() {
     const aid = this.#el('dash-player')?.value;
     const ath = aid ? this.#resolveAthlete(aid) : null;
-    const profileEl = this.#el('dash-profile-info');
-    if (!profileEl) return;
-
-    if (!ath) { profileEl.innerHTML = ''; return; }
-
-    const allRecords = this.ds.getAllRecords ? this.ds.getAllRecords() : this.ds.records || [];
-    const playerRecords = allRecords.filter(r => r.name === ath.name && r.status === 'OK' && r.finish);
-    const finishes = playerRecords.map(r => parseFloat(r.finish)).filter(v => v > 0);
-    const starts = playerRecords.map(r => parseFloat(r.start_time)).filter(v => v > 0);
-
-    if (finishes.length === 0 && !ath) { profileEl.innerHTML = '<span style="color:#666">기록 없음</span>'; return; }
-
-    const best = finishes.length ? Math.min(...finishes).toFixed(3) : '—';
-    const avgStart = starts.length ? (starts.reduce((s, v) => s + v, 0) / starts.length).toFixed(3) : '—';
-
-    let html = '';
-    if (ath) {
-      html += `<div class="dash-env-row"><span>ID:</span> <span class="dash-env-val">${ath.athlete_id}</span></div>`;
-      if (ath.height_cm) html += `<div class="dash-env-row"><span>키:</span> <span class="dash-env-val">${ath.height_cm}cm</span></div>`;
-      if (ath.weight_kg) html += `<div class="dash-env-row"><span>체중:</span> <span class="dash-env-val">${ath.weight_kg}kg</span></div>`;
-    }
-    html += `<div class="dash-env-row"><span>기록 수:</span> <span class="dash-env-val">${finishes.length}건</span></div>`;
-    html += `<div class="dash-env-row"><span>최고 기록:</span> <span class="dash-env-val">${best}초</span></div>`;
-    html += `<div class="dash-env-row"><span>평균 스타트:</span> <span class="dash-env-val">${avgStart}초</span></div>`;
-    profileEl.innerHTML = html;
+    if (!ath) return;
 
     // 키/체중 자동 입력 (예측 모델용)
-    if (ath) {
-      const hEl = this.#el('pred-height');
-      const wEl = this.#el('pred-weight');
-      if (hEl && ath.height_cm) hEl.value = ath.height_cm;
-      if (wEl && ath.weight_kg) wEl.value = ath.weight_kg;
-    }
+    const hEl = this.#el('pred-height');
+    const wEl = this.#el('pred-weight');
+    if (hEl && ath.height_cm) hEl.value = ath.height_cm;
+    if (wEl && ath.weight_kg) wEl.value = ath.weight_kg;
 
     // 목표 스타트 자동 설정
+    const allRecords = this.ds.getAllRecords ? this.ds.getAllRecords() : this.ds.records || [];
+    const starts = allRecords.filter(r => r.name === ath.name && r.status === 'OK' && r.start_time)
+      .map(r => parseFloat(r.start_time)).filter(v => v > 0);
     const targetEl = this.#el('dash-target-start');
-    if (targetEl && !targetEl.value && avgStart !== '—') targetEl.value = avgStart;
+    if (targetEl && !targetEl.value && starts.length) {
+      targetEl.value = (starts.reduce((s, v) => s + v, 0) / starts.length).toFixed(3);
+    }
   }
 
   async #fetchWeather() {
