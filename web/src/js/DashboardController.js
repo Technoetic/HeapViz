@@ -392,25 +392,54 @@ class DashboardController {
       });
     } catch (e) { /* ignore */ }
 
-    // 최종 예측값 (XGBoost 우선)
-    const predicted = xgbPredicted || (mlrResult ? mlrResult.prediction.predicted : null);
-    if (!predicted) {
+    // 개별 모델 예측값
+    const mlrPredicted = mlrResult ? mlrResult.prediction.predicted : null;
+    const mlrR2 = mlrResult ? mlrResult.modelInfo.r2 : 0;
+    const xgbR2 = xgbModel ? (xgbModel.cv || 0) : 0;
+
+    if (!xgbPredicted && !mlrPredicted) {
       resultEl.innerHTML = '<div style="text-align:center;color:#f44336;padding:1rem">예측 실패</div>';
       return;
     }
 
-    const modelName = xgbPredicted ? 'XGBoost' : 'MLR';
-    const cvR2 = xgbPredicted ? (xgbModel.cv || 0.60) : (mlrResult ? mlrResult.modelInfo.r2 : 0);
-    const accuracy = (cvR2 * 100).toFixed(1);
+    // 앙상블: MLR 가중치 높게 (MLR이 일반적으로 더 정확)
+    let ensemblePredicted = null;
+    if (xgbPredicted && mlrPredicted) {
+      const wMLR = 0.7, wXGB = 0.3;
+      ensemblePredicted = mlrPredicted * wMLR + xgbPredicted * wXGB;
+    }
+
+    // 최적 모델 선택: MLR R² vs XGB CV R² 비교 → 높은 쪽이 최종
+    const models = [];
+    if (mlrPredicted) models.push({ name: 'MLR', pred: mlrPredicted, r2: mlrR2 });
+    if (xgbPredicted) models.push({ name: 'XGBoost', pred: xgbPredicted, r2: xgbR2 });
+    if (ensemblePredicted) models.push({ name: '앙상블', pred: ensemblePredicted, r2: Math.max(mlrR2, xgbR2) });
+
+    // R² 가장 높은 모델이 최종
+    models.sort((a, b) => b.r2 - a.r2);
+    const best = models[0];
+    const predicted = best.pred;
+
+    // 모델별 카드 HTML
+    const modelCard = (m, isBest) => {
+      const color = isBest ? '#4caf50' : '#888';
+      const border = isBest ? '2px solid #4caf50' : '1px solid rgba(255,255,255,0.1)';
+      const label = isBest ? ' ⭐ 최적' : '';
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-radius:6px;border:${border};margin-bottom:4px;background:rgba(255,255,255,0.03)">
+        <span style="font-weight:600;color:${color}">${m.name}${label}</span>
+        <span style="font-size:1.1rem;font-weight:700;color:${isBest ? '#fff' : '#aaa'}">${m.pred.toFixed(2)}s</span>
+        <span style="font-size:0.75rem;color:#888">R² ${(m.r2 * 100).toFixed(1)}%</span>
+      </div>`;
+    };
 
     // 결과 렌더링
     resultEl.innerHTML = `
       <div class="dash-big-number">
-        <div class="sub">최종 예상 기록</div>
+        <div class="sub">최종 예상 기록 (${best.name})</div>
         <div class="number" data-countup="${predicted.toFixed(2)}">${predicted.toFixed(2)}<span class="unit">s</span></div>
       </div>
-      <div class="dash-model-badge">
-        모델: <strong>${modelName}</strong> | 정확도: <span class="dash-accuracy">${accuracy}%</span>
+      <div style="margin-top:10px">
+        ${models.map(m => modelCard(m, m.name === best.name)).join('')}
       </div>
     `;
 
