@@ -183,15 +183,35 @@ class DashboardController {
     }
   }
 
-  async #fetchWeatherForDate(dateStr) {
-    if (!dateStr) return this.#fetchWeather();
+  async #fetchWeatherForDate(datetimeStr) {
+    if (!datetimeStr) return this.#fetchWeather();
+    // datetime-local: "2026-03-13T14:00" or date-only: "2026-03-13"
+    const hasTime = datetimeStr.includes('T');
     const titleEl = this.#el('dash-weather-title');
-    if (titleEl) titleEl.textContent = `${dateStr} 환경 데이터`;
+    let tm1, tm2, timeLabel;
 
     const KMA_KEY = 'ncpn3dPgT5OKZ93T4D-TJw';
-    const d = dateStr.replace(/-/g, '');
-    const tm1 = `${d}0900`;
-    const tm2 = `${d}1700`;
+
+    if (hasTime) {
+      // 시간 지정 → 해당 시각 ±30분
+      const dt = new Date(datetimeStr);
+      const pad = n => String(n).padStart(2, '0');
+      const fmt = d => `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}${pad(d.getHours())}${pad(d.getMinutes())}`;
+      const from = new Date(dt.getTime() - 30 * 60000);
+      const to = new Date(dt.getTime() + 30 * 60000);
+      tm1 = fmt(from);
+      tm2 = fmt(to);
+      timeLabel = `${pad(dt.getHours())}:${pad(dt.getMinutes())} ±30분`;
+      if (titleEl) titleEl.textContent = `${datetimeStr.replace('T', ' ')} 환경 데이터`;
+    } else {
+      // 날짜만 → 09~17시 평균
+      const d = datetimeStr.replace(/-/g, '');
+      tm1 = `${d}0900`;
+      tm2 = `${d}1700`;
+      timeLabel = '09-17시 평균';
+      if (titleEl) titleEl.textContent = `${datetimeStr} 환경 데이터`;
+    }
+
     const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
     const base = isLocal ? 'https://apihub.kma.go.kr/api' : '/api/kma';
     const url = `${base}/typ01/cgi-bin/url/nph-aws2_min?tm1=${tm1}&tm2=${tm2}&stn=100&disp=0&help=0&authKey=${KMA_KEY}`;
@@ -242,7 +262,7 @@ class DashboardController {
         const span = document.createElement('span');
         span.className = 'weather-time';
         span.style.cssText = 'font-size:0.65rem;color:#ff9800;margin-left:6px;font-weight:400;';
-        span.textContent = `09-17시 평균 (${cnt}건)`;
+        span.textContent = `${timeLabel} (${cnt}건)`;
         h4.appendChild(span);
       }
       this.#updateCalc();
