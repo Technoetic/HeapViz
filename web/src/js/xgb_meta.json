@@ -3,12 +3,13 @@
     "features": [
       "start_time",
       "temp_avg",
-      "기상청_기온평균_C",
-      "기상청_습도평균_pct",
-      "기상청_현지기압_hPa",
-      "기상청_이슬점평균_C",
-      "기상청_풍속평균_ms",
-      "is_female"
+      "air_temp",
+      "humidity_pct",
+      "pressure_hpa",
+      "dewpoint_c",
+      "wind_speed_ms",
+      "is_female",
+      "athlete_id_enc"
     ],
     "featureLabels": [
       "스타트 시간",
@@ -18,31 +19,35 @@
       "현지기압",
       "이슬점",
       "풍속",
-      "여성 여부"
+      "여성 여부",
+      "선수 인코딩"
     ],
-    "trainN": 1185,
-    "trainR2": 0.7574,
-    "trainRMSE": 0.7508,
-    "trainMAE": 0.5312,
-    "cvR2": 0.5965,
-    "cvR2Std": 0.0529,
+    "trainN": 1176,
+    "trainR2": 0.8781,
+    "trainRMSE": 0.5071,
+    "trainMAE": 0.3689,
+    "cvR2": 0.4466,
+    "cvR2Std": 0.1343,
     "importance": {
-      "start_time": 0.2134,
-      "temp_avg": 0.1643,
-      "기상청_기온평균_C": 0.0567,
-      "기상청_습도평균_pct": 0.1141,
-      "기상청_현지기압_hPa": 0.1601,
-      "기상청_이슬점평균_C": 0.122,
-      "기상청_풍속평균_ms": 0.0949,
-      "is_female": 0.0745
+      "start_time": 0.2567,
+      "temp_avg": 0.1523,
+      "air_temp": 0.0547,
+      "humidity_pct": 0.1083,
+      "pressure_hpa": 0.1154,
+      "dewpoint_c": 0.0379,
+      "wind_speed_ms": 0.1007,
+      "is_female": 0.0397,
+      "athlete_id_enc": 0.1342
     },
-    "defaults": {
-      "temp_avg": -6.8,
-      "air_temp": 2.9,
-      "humidity": 56.7,
-      "pressure": 936.5,
-      "dewpoint": -2.8,
-      "wind_speed": 1.6
+    "params": {
+      "learning_rate": 0.1,
+      "max_depth": 3,
+      "min_child_weight": 3,
+      "n_estimators": 200,
+      "colsample_bytree": 0.7,
+      "reg_alpha": 0.1,
+      "reg_lambda": 3.0,
+      "subsample": 0.9
     }
   },
   "live": {
@@ -53,11 +58,11 @@
       "int3",
       "int4",
       "temp_avg",
-      "기상청_기온평균_C",
-      "기상청_습도평균_pct",
-      "기상청_현지기압_hPa",
-      "기상청_이슬점평균_C",
-      "기상청_풍속평균_ms",
+      "air_temp",
+      "humidity_pct",
+      "pressure_hpa",
+      "dewpoint_c",
+      "wind_speed_ms",
       "is_female"
     ],
     "featureLabels": [
@@ -74,25 +79,34 @@
       "풍속",
       "여성 여부"
     ],
-    "trainN": 1155,
-    "trainR2": 0.9989,
-    "trainRMSE": 0.0517,
-    "trainMAE": 0.0382,
-    "cvR2": 0.9727,
-    "cvR2Std": 0.0102,
+    "trainN": 1146,
+    "trainR2": 0.9957,
+    "trainRMSE": 0.0954,
+    "trainMAE": 0.0566,
+    "cvR2": 0.9759,
+    "cvR2Std": 0.0118,
     "importance": {
-      "start_time": 0.016,
-      "int1": 0.0148,
-      "int2": 0.0272,
-      "int3": 0.3624,
-      "int4": 0.5231,
-      "temp_avg": 0.0058,
-      "기상청_기온평균_C": 0.0059,
-      "기상청_습도평균_pct": 0.005,
-      "기상청_현지기압_hPa": 0.0085,
-      "기상청_이슬점평균_C": 0.0068,
-      "기상청_풍속평균_ms": 0.0105,
-      "is_female": 0.0141
+      "start_time": 0.0098,
+      "int1": 0.0111,
+      "int2": 0.0108,
+      "int3": 0.0085,
+      "int4": 0.9275,
+      "temp_avg": 0.0051,
+      "air_temp": 0.0046,
+      "humidity_pct": 0.0035,
+      "pressure_hpa": 0.0063,
+      "dewpoint_c": 0.0035,
+      "wind_speed_ms": 0.0066,
+      "is_female": 0.0027
+    },
+    "params": {
+      "colsample_bytree": 1.0,
+      "learning_rate": 0.05,
+      "max_depth": 6,
+      "min_child_weight": 5,
+      "n_estimators": 200,
+      "reg_lambda": 5.0,
+      "subsample": 0.8
     }
   }
 }
