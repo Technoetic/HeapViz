@@ -4876,26 +4876,27 @@ class TableRenderer {
       ensemblePredicted = mlrPredicted * wMLR + xgbPredicted * wXGB;
     }
 
-    // 최적 모델 선택: MLR R² vs XGB CV R² 비교 → 높은 쪽이 최종
+    // 모델 목록 구성
     const models = [];
     if (mlrPredicted) models.push({ name: 'MLR', pred: mlrPredicted, r2: mlrR2 });
     if (xgbPredicted) models.push({ name: 'XGBoost', pred: xgbPredicted, r2: xgbR2 });
-    if (ensemblePredicted) models.push({ name: '앙상블', pred: ensemblePredicted, r2: Math.max(mlrR2, xgbR2) });
+    if (ensemblePredicted) models.push({ name: '앙상블', pred: ensemblePredicted, r2: null });
 
-    // R² 가장 높은 모델이 최종
-    models.sort((a, b) => b.r2 - a.r2);
-    const best = models[0];
+    // 최종 선택: 앙상블 > MLR > XGBoost (앙상블이 두 모델 결합으로 가장 안정적)
+    const best = ensemblePredicted ? models.find(m => m.name === '앙상블')
+      : (mlrPredicted ? models.find(m => m.name === 'MLR') : models[0]);
     const predicted = best.pred;
 
     // 모델별 카드 HTML
     const modelCard = (m, isBest) => {
       const color = isBest ? '#4caf50' : '#888';
       const border = isBest ? '2px solid #4caf50' : '1px solid rgba(255,255,255,0.1)';
-      const label = isBest ? ' ⭐ 최적' : '';
+      const label = isBest ? ' ⭐' : '';
+      const info = m.r2 != null ? `R² ${(m.r2 * 100).toFixed(1)}%` : 'MLR 70% + XGB 30%';
       return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-radius:6px;border:${border};margin-bottom:4px;background:rgba(255,255,255,0.03)">
-        <span style="font-weight:600;color:${color}">${m.name}${label}</span>
+        <span style="font-weight:600;color:${color};min-width:80px">${m.name}${label}</span>
         <span style="font-size:1.1rem;font-weight:700;color:${isBest ? '#fff' : '#aaa'}">${m.pred.toFixed(2)}s</span>
-        <span style="font-size:0.75rem;color:#888">R² ${(m.r2 * 100).toFixed(1)}%</span>
+        <span style="font-size:0.7rem;color:#888">${info}</span>
       </div>`;
     };
 
