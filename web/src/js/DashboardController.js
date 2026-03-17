@@ -37,6 +37,17 @@ class DashboardController {
     const player = this.#el('dash-player');
     if (player) player.addEventListener('change', () => this.#onPlayerChange());
 
+    // 날씨 날짜 선택
+    const dateEl = this.#el('dash-weather-date');
+    const nowBtn = this.#el('dash-weather-now');
+    if (dateEl) dateEl.addEventListener('change', () => this.#fetchWeatherForDate(dateEl.value));
+    if (nowBtn) nowBtn.addEventListener('click', () => {
+      if (dateEl) dateEl.value = '';
+      const titleEl = this.#el('dash-weather-title');
+      if (titleEl) titleEl.textContent = '실시간 환경 데이터';
+      this.#fetchWeather();
+    });
+
     // 모드 토글
     const personalBtn = this.#el('dash-mode-personal');
     const generalBtn = this.#el('dash-mode-general');
@@ -169,6 +180,83 @@ class DashboardController {
       this.#updateCalc();
     } catch (e) {
       console.warn('Weather fallback also failed:', e);
+    }
+  }
+
+  async #fetchWeatherForDate(dateStr) {
+    if (!dateStr) return this.#fetchWeather();
+    const titleEl = this.#el('dash-weather-title');
+    if (titleEl) titleEl.textContent = `${dateStr} 환경 데이터`;
+
+    const KMA_KEY = 'ncpn3dPgT5OKZ93T4D-TJw';
+    const d = dateStr.replace(/-/g, '');
+    const tm1 = `${d}0900`;
+    const tm2 = `${d}1700`;
+    const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    const base = isLocal ? 'https://apihub.kma.go.kr/api' : '/api/kma';
+    const url = `${base}/typ01/cgi-bin/url/nph-aws2_min?tm1=${tm1}&tm2=${tm2}&stn=100&disp=0&help=0&authKey=${KMA_KEY}`;
+
+    try {
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(resp.status);
+      const text = await resp.text();
+      const lines = text.split('\n').filter(l => l.trim() && !l.startsWith('#'));
+      if (!lines.length) throw new Error('해당 날짜 데이터 없음');
+
+      const valid = v => { const n = parseFloat(v); return (!isNaN(n) && n > -50) ? n : NaN; };
+      let sumTA = 0, sumHM = 0, sumPA = 0, sumWD = 0, sumWS = 0, maxWSS = 0, cnt = 0;
+      for (const line of lines) {
+        const cols = line.trim().split(/\s+/);
+        if (cols.length < 16) continue;
+        const ta = valid(cols[8]), hm = valid(cols[14]), pa = valid(cols[15]);
+        const wd = valid(cols[6]), ws = valid(cols[7]), wss = valid(cols[5]);
+        if (isNaN(ta) || isNaN(hm) || isNaN(pa)) continue;
+        sumTA += ta; sumHM += hm; sumPA += pa;
+        if (!isNaN(wd)) sumWD += wd;
+        if (!isNaN(ws) && ws >= 0) sumWS += ws;
+        if (!isNaN(wss) && wss > maxWSS) maxWSS = wss;
+        cnt++;
+      }
+      if (!cnt) throw new Error('유효 데이터 없음');
+
+      const avgTA = sumTA / cnt, avgHM = sumHM / cnt, avgPA = sumPA / cnt;
+      const avgWD = sumWD / cnt, avgWS = sumWS / cnt;
+
+      const airEl = this.#el('dash-airtemp');
+      const humEl = this.#el('dash-humidity');
+      const presEl = this.#el('dash-pressure');
+      const wdEl = this.#el('dash-winddir');
+      const wsEl = this.#el('dash-windspd');
+      const wgEl = this.#el('dash-windgust');
+      if (airEl) { airEl.value = avgTA.toFixed(1); airEl.readOnly = true; }
+      if (humEl) { humEl.value = avgHM.toFixed(0); humEl.readOnly = true; }
+      if (presEl) { presEl.value = avgPA.toFixed(1); presEl.readOnly = true; }
+      if (wdEl) { wdEl.value = avgWD.toFixed(0); wdEl.readOnly = true; }
+      if (wsEl) { wsEl.value = avgWS.toFixed(1); wsEl.readOnly = true; }
+      if (wgEl) { wgEl.value = maxWSS.toFixed(1); wgEl.readOnly = true; }
+
+      // 시간 표시
+      const h4 = airEl?.closest('.dash-card')?.querySelector('h4');
+      if (h4) {
+        h4.querySelector('.weather-time')?.remove();
+        const span = document.createElement('span');
+        span.className = 'weather-time';
+        span.style.cssText = 'font-size:0.65rem;color:#ff9800;margin-left:6px;font-weight:400;';
+        span.textContent = `09-17시 평균 (${cnt}건)`;
+        h4.appendChild(span);
+      }
+      this.#updateCalc();
+    } catch (e) {
+      console.warn('과거 날씨 데이터 조회 실패:', e);
+      const h4 = this.#el('dash-airtemp')?.closest('.dash-card')?.querySelector('h4');
+      if (h4) {
+        h4.querySelector('.weather-time')?.remove();
+        const span = document.createElement('span');
+        span.className = 'weather-time';
+        span.style.cssText = 'font-size:0.65rem;color:#f44336;margin-left:6px;font-weight:400;';
+        span.textContent = '조회 실패';
+        h4.appendChild(span);
+      }
     }
   }
 
