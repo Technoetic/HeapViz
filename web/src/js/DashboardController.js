@@ -37,16 +37,27 @@ class DashboardController {
     const player = this.#el('dash-player');
     if (player) player.addEventListener('change', () => this.#onPlayerChange());
 
-    // 날씨 날짜 선택
+    // 날씨 모드 토글
+    const weatherRealtimeBtn = this.#el('dash-weather-mode-realtime');
+    const weatherPastBtn = this.#el('dash-weather-mode-past');
+    const weatherPastFields = this.#el('dash-weather-past-fields');
     const dateEl = this.#el('dash-weather-date');
-    const nowBtn = this.#el('dash-weather-now');
-    if (dateEl) dateEl.addEventListener('change', () => this.#fetchWeatherForDate(dateEl.value));
-    if (nowBtn) nowBtn.addEventListener('click', () => {
+
+    if (weatherRealtimeBtn) weatherRealtimeBtn.addEventListener('click', () => {
+      weatherRealtimeBtn.classList.add('active');
+      if (weatherPastBtn) weatherPastBtn.classList.remove('active');
+      if (weatherPastFields) weatherPastFields.style.display = 'none';
       if (dateEl) dateEl.value = '';
       const titleEl = this.#el('dash-weather-title');
       if (titleEl) titleEl.textContent = '실시간 환경 데이터';
       this.#fetchWeather();
     });
+    if (weatherPastBtn) weatherPastBtn.addEventListener('click', () => {
+      weatherPastBtn.classList.add('active');
+      if (weatherRealtimeBtn) weatherRealtimeBtn.classList.remove('active');
+      if (weatherPastFields) weatherPastFields.style.display = '';
+    });
+    if (dateEl) dateEl.addEventListener('change', () => this.#fetchWeatherForDate(dateEl.value));
 
     // 모드 토글
     const personalBtn = this.#el('dash-mode-personal');
