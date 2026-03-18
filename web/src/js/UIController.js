@@ -293,6 +293,21 @@ class UIController {
     window._ui = this;
   }
 
+  /** 종목 전환 시 데이터만 갱신 (이벤트 재바인딩 없음) */
+  refreshData() {
+    for (const prefix of ['analysis', 'trackmap']) {
+      this.#populateFilterDropdowns(prefix);
+      this.#populatePlayerSelect(`${prefix}-player-select`);
+    }
+    this.#populateExploreFilters();
+    this._lazyLoaded = {};
+    this._trackMapRendered = false;
+    this.#toggleModelInputs();
+    this.#renderPredictionTab();
+    this.#renderCompareTab();
+    this.#renderExploreTab();
+  }
+
 
   // ─── Tab 전환 ──────────────────────────────────────────────
   #bindTabEvents() {
@@ -2197,14 +2212,13 @@ window.addEventListener('DOMContentLoaded', async () => {
         ui.table = new TableRenderer(ui.ds);
         ui.trackMap = new TrackMapRenderer(ui.ds, ui.analyzer);
 
+        // Refresh UI data (NO re-binding events)
+        ui.refreshData();
+
         // Re-init dashboard with new data
         dash.ds = ui.ds;
         dash.trackMap = ui.trackMap;
         dash.init();
-
-        // Re-init UI tabs
-        ui._lazyLoaded = {};
-        ui.init();
 
         // Update title
         const cfg = SPORT_CONFIG[sport];
