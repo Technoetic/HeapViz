@@ -368,24 +368,25 @@ class DashboardController {
       return;
     }
 
-    // XGBoost 출발 전 예측
+    // XGBoost 출발 전 예측 (종목별 모델 선택)
     let xgbPredicted = null;
     let xgbModel = null;
-    if (typeof XGB_MODELS !== 'undefined' && XGB_MODELS.pre) {
+    const sportModels = (typeof XGB_MODELS !== 'undefined' && typeof CURRENT_SPORT !== 'undefined')
+      ? XGB_MODELS[CURRENT_SPORT] : (typeof XGB_MODELS !== 'undefined' ? XGB_MODELS : null);
+    const preModel = sportModels ? sportModels.pre : null;
+    if (preModel) {
       const dewPoint = PredictionModel.calcDewPoint(inp.airTemp, inp.humidity);
       const isFemale = inp.gender === 'W' ? 1 : 0;
-      // 피처 순서: start_time, temp_avg, air_temp, humidity, pressure, dewpoint, wind_speed, is_female, [athlete_id_enc]
       const features = [inp.startTime, inp.iceTemp, inp.airTemp, inp.humidity, inp.pressure, dewPoint, inp.windSpeed, isFemale];
-      // 선수 인코딩 (id_map 있을 때)
-      if (XGB_MODELS.pre.id_map && inp.player && inp.player !== '__general__') {
+      if (preModel.id_map && inp.player && inp.player !== '__general__') {
         const ath = this.#resolveAthlete(inp.player);
-        const encVal = ath ? (XGB_MODELS.pre.id_map[ath.athlete_id] ?? -1) : -1;
+        const encVal = ath ? (preModel.id_map[ath.athlete_id] ?? -1) : -1;
         features.push(encVal);
-      } else if (XGB_MODELS.pre.id_map) {
+      } else if (preModel.id_map) {
         features.push(-1);
       }
-      xgbPredicted = xgbPredict(XGB_MODELS.pre, features);
-      xgbModel = XGB_MODELS.pre;
+      xgbPredicted = xgbPredict(preModel, features);
+      xgbModel = preModel;
     }
 
     // MLR 예측

@@ -2173,4 +2173,47 @@ window.addEventListener('DOMContentLoaded', async () => {
   ui.init();
   const dash = new DashboardController(ui.ds, ui.predModel, ui.charts, ui.trackMap);
   dash.init();
+
+  // Sport navigation
+  window._ui = ui;
+  window._dash = dash;
+  document.querySelectorAll('.sport-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const sport = btn.dataset.sport;
+      if (sport === CURRENT_SPORT) return;
+
+      // UI feedback
+      document.querySelectorAll('.sport-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const loadEl = document.getElementById('sport-loading');
+      if (loadEl) loadEl.style.display = '';
+
+      try {
+        await switchSport(sport);
+
+        // Rebuild DataStore & dependent components
+        ui.ds = new DataStore(RAW_DATA);
+        ui.analyzer = new PlayerAnalyzer(ui.ds);
+        ui.table = new TableRenderer(ui.ds);
+        ui.trackMap = new TrackMapRenderer(ui.ds, ui.analyzer);
+
+        // Re-init dashboard with new data
+        dash.ds = ui.ds;
+        dash.trackMap = ui.trackMap;
+        dash.init();
+
+        // Re-init UI tabs
+        ui._lazyLoaded = {};
+        ui.init();
+
+        // Update title
+        const cfg = SPORT_CONFIG[sport];
+        document.title = cfg.label + ' 경기기록 분석';
+      } catch (err) {
+        console.error('Sport switch failed:', err);
+      } finally {
+        if (loadEl) loadEl.style.display = 'none';
+      }
+    });
+  });
 });

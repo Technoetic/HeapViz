@@ -1,3 +1,45 @@
+/* ── Sport Nav ── */
+.sport-nav {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, #0a1628 0%, #132744 100%);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.sport-btn {
+  padding: 8px 20px;
+  background: transparent;
+  color: #8899aa;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+}
+.sport-btn:hover {
+  color: #c0d0e0;
+  background: rgba(255,255,255,0.04);
+}
+.sport-btn.active {
+  color: #fff;
+  border-bottom-color: #4fc3f7;
+}
+.sport-btn.active[data-sport="skeleton"] { border-bottom-color: #4fc3f7; }
+.sport-btn.active[data-sport="luge"] { border-bottom-color: #66bb6a; }
+.sport-btn.active[data-sport="bobsled"] { border-bottom-color: #ffa726; }
+.sport-loading {
+  margin-left: 12px;
+  color: #4fc3f7;
+  font-size: 0.8rem;
+  animation: pulse 1s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
 /* ── Dashboard Tab ── */
 .dash-layout {
   display: grid;
