@@ -8,15 +8,20 @@ class DashboardController {
   }
 
   init() {
-    this.#bindEvents();
+    if (!this._eventsBound) {
+      this.#bindEvents();
+      this._eventsBound = true;
+    }
     this.#populateSelectors();
     this.#renderTrackMap();
     this.#fetchWeather();
   }
 
   #renderTrackMap() {
-    if (this.trackMap && document.getElementById('dash-track-container')) {
+    const container = document.getElementById('dash-track-container');
+    if (this.trackMap && container) {
       try {
+        container.innerHTML = '';
         this.trackMap.render('dash-track-container');
       } catch (e) { /* ignore */ }
     }
