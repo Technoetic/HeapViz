@@ -3817,8 +3817,12 @@ class TableRenderer {
     if (h4) {
       h4.style.cssText += 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;';
 
+      // 이전 범례/버튼 제거 (종목 전환 시 중복 방지)
+      h4.querySelectorAll('[data-track-ctrl]').forEach(el => el.remove());
+
       // 범례
       const legend = document.createElement('span');
+      legend.setAttribute('data-track-ctrl', 'legend');
       legend.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px 10px;font-size:0.65rem;color:#7a9ab5;margin-left:auto;font-weight:400;text-transform:none;letter-spacing:0;';
       this._segments.forEach(seg => {
         const item = document.createElement('span');
@@ -3830,6 +3834,7 @@ class TableRenderer {
 
       // 버튼
       const btns = document.createElement('span');
+      btns.setAttribute('data-track-ctrl', 'buttons');
       btns.style.cssText = 'display:flex;gap:4px;flex-shrink:0;';
 
       const resetBtn = document.createElement('button');
