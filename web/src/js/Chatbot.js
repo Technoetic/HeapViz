@@ -52,7 +52,9 @@ RULES:
 7. Use Supabase PostgREST syntax is NOT needed — use standard SQL.
 8. Limit results to 50 rows max.
 9. For name searches, use ILIKE for fuzzy matching.
-10. "평균 기록" = AVG(finish), "최고 기록" = MIN(finish), "최저 기록" = MAX(finish).`;
+10. "평균 기록" = AVG(finish), "최고 기록" = MIN(finish), "최저 기록" = MAX(finish).
+11. If the user inputs ONLY a player name (e.g. "여찬혁"), return that player's records: SELECT * FROM {records_table} WHERE name ILIKE '{romanized}%' AND status='OK' ORDER BY finish ASC LIMIT 20
+12. ALWAYS include a WHERE clause with the player name when a name is mentioned.`;
 
   constructor() {
     this.messages = [];
@@ -201,7 +203,7 @@ RULES:
     }
 
     // Post-filter: enforce finish range client-side (safety net)
-    const range = this.sport === 'skeleton' ? [49, 60] : [45, 65];
+    const range = this.sport === 'skeleton' ? [50, 60] : [45, 65];
     if (dbResult[0] && 'finish' in dbResult[0]) {
       dbResult = dbResult.filter(r => {
         const f = parseFloat(r.finish);
@@ -385,8 +387,11 @@ Reply with ONLY a number between 0.0 and 1.0.` },
 
   async _classifyIntent(question) {
     const resp = await this._callLLM([
-      { role: 'system', content: `You classify user questions into categories.
+      { role: 'system', content: `You classify user questions about sliding sports (skeleton/luge/bobsled) into categories.
 Categories: record_query, player_compare, environment_analysis, prediction, out_of_scope
+- If the input is just a player name (e.g. "여찬혁", "김지수"), classify as record_query.
+- If it's about weather/temperature/humidity, classify as environment_analysis.
+- If it asks to compare two or more players, classify as player_compare.
 Reply with ONLY the category name.` },
       { role: 'user', content: question },
     ]);
@@ -449,7 +454,7 @@ Generate a single SELECT SQL query:`;
     const filters = [];
     if (!upper.includes("STATUS")) filters.push("status = 'OK'");
     // Sport-specific normal finish range
-    const range = this.sport === 'skeleton' ? [49, 60] : [45, 65];
+    const range = this.sport === 'skeleton' ? [50, 60] : [45, 65];
     if (!upper.includes("FINISH >") && !upper.includes("FINISH BETWEEN") && !upper.includes("FINISH <")) {
       filters.push(`finish BETWEEN ${range[0]} AND ${range[1]}`);
     }
