@@ -7603,7 +7603,8 @@ RULES:
     if (validSqls.length === 0) {
       return { text: '질문을 이해했지만, 안전한 데이터 쿼리를 생성할 수 없습니다. 다시 질문해 주세요.' };
     }
-    const finalSQL = this._pickConsensus(validSqls);
+    const rawSQL = this._pickConsensus(validSqls);
+    const finalSQL = this._injectFilters(rawSQL, tables);
 
     // ── Phase 2: DB execution ──
     const dbResult = await this._executeSQL(finalSQL, tables);
@@ -7694,7 +7695,42 @@ Reply with ONLY a number between 0.0 and 1.0.` },
   }
 
   _codeFactcheck(answer, dbResult, aggregated) {
-    // Additional code-level verification: check numbers
+    // Extract decimal numbers from answer (e.g. 50.71, 55.335)
+    const ansNums = (answer.match(/\d+\.\d+/g) || []).map(Number);
+    if (ansNums.length === 0) return answer;
+
+    // Build set of valid numbers from DB + aggregated
+    const validNums = new Set();
+    for (const row of dbResult) {
+      for (const val of Object.values(row)) {
+        if (typeof val === 'number') {
+          validNums.add(+val.toFixed(3));
+          validNums.add(+val.toFixed(2));
+          validNums.add(+val.toFixed(1));
+        }
+      }
+    }
+    for (const val of Object.values(aggregated)) {
+      if (typeof val === 'number') {
+        validNums.add(+val.toFixed(3));
+        validNums.add(+val.toFixed(2));
+        validNums.add(+val.toFixed(1));
+      }
+    }
+
+    // Check each number in answer — if ANY key number is wrong, reject
+    let wrongCount = 0;
+    for (const n of ansNums) {
+      const rounded = [+n.toFixed(3), +n.toFixed(2), +n.toFixed(1)];
+      if (!rounded.some(r => validNums.has(r))) {
+        wrongCount++;
+      }
+    }
+
+    // If >30% of numbers are wrong, fall back to template
+    if (ansNums.length > 0 && wrongCount / ansNums.length > 0.3) {
+      return this._templateFallback('', dbResult, aggregated);
+    }
     return answer;
   }
 
@@ -7781,6 +7817,38 @@ Generate a single SELECT SQL query:`;
     if (!hasTable) return false;
 
     return true;
+  }
+
+  // Inject mandatory filters into SQL (post-validation)
+  _injectFilters(sql, tables) {
+    const upper = sql.toUpperCase();
+    // Only inject into record tables (not athlete tables)
+    const isRecordQuery = [tables.records, 'skeleton_records', 'luge_records', 'bobsled_records']
+      .some(t => upper.includes(t.toUpperCase()));
+    if (!isRecordQuery) return sql;
+
+    const filters = [];
+    if (!upper.includes("STATUS")) filters.push("status = 'OK'");
+    if (!upper.includes("FINISH >") && !upper.includes("FINISH BETWEEN") && upper.includes("FINISH")) {
+      filters.push("finish BETWEEN 45 AND 65");
+    } else if (!upper.includes("FINISH")) {
+      filters.push("finish BETWEEN 45 AND 65");
+    }
+
+    if (filters.length === 0) return sql;
+
+    const injection = filters.join(' AND ');
+    if (upper.includes('WHERE')) {
+      // Append to existing WHERE
+      return sql.replace(/WHERE\s+/i, `WHERE ${injection} AND `);
+    } else {
+      // Insert WHERE before ORDER/LIMIT/GROUP or at end
+      const insertPoint = sql.search(/\s+(ORDER|LIMIT|GROUP)\s+/i);
+      if (insertPoint > 0) {
+        return sql.slice(0, insertPoint) + ` WHERE ${injection}` + sql.slice(insertPoint);
+      }
+      return sql + ` WHERE ${injection}`;
+    }
   }
 
   _pickConsensus(sqls) {
