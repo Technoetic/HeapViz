@@ -7739,11 +7739,29 @@ RULES:
     return { slope, intercept, r2, n };
   }
 
+  // Filter for normal records (all intermediate times present and reasonable)
+  _filterNormal(data) {
+    return data.filter(r => {
+      const st = parseFloat(r.start_time), i1 = parseFloat(r.int1), i2 = parseFloat(r.int2);
+      const i3 = parseFloat(r.int3), i4 = parseFloat(r.int4), fin = parseFloat(r.finish);
+      if (!st || !i1 || !i2 || !i3 || !i4 || !fin) return false;
+      // Normal: start 3~8, int1 13~17, int2 22~26, int3 32~37, int4 42~48, finish 49~60
+      if (st < 3 || st > 8) return false;
+      if (i1 < 12 || i1 > 18) return false;
+      if (i2 < 20 || i2 > 28) return false;
+      if (i3 < 28 || i3 > 40) return false;
+      if (i4 < 38 || i4 > 50) return false;
+      // Segment times must be positive and reasonable (> 3s each)
+      if (i1 - st < 3 || i2 - i1 < 3 || i3 - i2 < 3 || i4 - i3 < 3 || fin - i4 < 3) return false;
+      return true;
+    });
+  }
+
   async _insightStartImpact(baseUrl, h, range) {
-    const data = await this._fetchRecords(baseUrl, h, range);
-    const xs = data.map(r => parseFloat(r.start_time)).filter(v => v > 3 && v < 8);
-    const ys = data.filter(r => parseFloat(r.start_time) > 3 && parseFloat(r.start_time) < 8)
-                    .map(r => parseFloat(r.finish));
+    const raw = await this._fetchRecords(baseUrl, h, range);
+    const data = this._filterNormal(raw);
+    const xs = data.map(r => parseFloat(r.start_time));
+    const ys = data.map(r => parseFloat(r.finish));
     const reg = this._linearRegression(xs, ys);
     if (!reg) return { text: '데이터가 부족합니다.' };
 
@@ -7760,8 +7778,8 @@ RULES:
   }
 
   async _insightSegment(q, baseUrl, h, range) {
-    const data = await this._fetchRecords(baseUrl, h, range);
-    const valid = data.filter(r => r.int1 && r.int2 && r.int3 && r.int4 && r.finish);
+    const raw = await this._fetchRecords(baseUrl, h, range);
+    const valid = this._filterNormal(raw);
 
     if (valid.length < 10) return { text: '구간 데이터가 부족합니다.' };
 
