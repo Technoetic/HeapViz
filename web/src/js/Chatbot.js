@@ -256,8 +256,7 @@ RULES:
       finalAnswer = this._codeFactcheck(answers[bestIdx], dbResult, aggregated);
     }
 
-    const tableHtml = this._buildTable(dbResult);
-    return { text: finalAnswer, table: tableHtml };
+    return { text: finalAnswer };
   }
 
   _clientAggregate(data) {
