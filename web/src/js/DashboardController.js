@@ -382,12 +382,24 @@ class DashboardController {
     if (preModel) {
       let features;
       if (preModel.v === 2) {
-        // V2: start_time, height_cm, weight_kg, temp_avg, air_density, dewpoint_c
+        // V2: start_time, height_cm, weight_kg, temp_avg, air_density, dewpoint_c + onehot athlete
         const dewPoint = PredictionModel.calcDewPoint(inp.airTemp, inp.humidity);
         const airDensity = PredictionModel.calcAirDensity(inp.airTemp, inp.humidity, inp.pressure);
         const h = inp.height || 175;
         const w = inp.weight || 75;
         features = [inp.startTime, h, w, inp.iceTemp, airDensity, dewPoint];
+        // Onehot athlete encoding (V2)
+        if (preModel.onehot_map && preModel.onehot_count) {
+          const onehot = new Array(preModel.onehot_count).fill(0);
+          if (inp.player && inp.player !== '__general__') {
+            const ath = this.#resolveAthlete(inp.player);
+            const aid = ath ? ath.athlete_id : inp.player;
+            if (aid in preModel.onehot_map) {
+              onehot[preModel.onehot_map[aid]] = 1;
+            }
+          }
+          features.push(...onehot);
+        }
       } else {
         // V1: start_time, temp_avg, air_temp, humidity_pct, pressure_hpa, dewpoint_c, wind_speed_ms, is_female
         const dewPoint = PredictionModel.calcDewPoint(inp.airTemp, inp.humidity);
@@ -416,7 +428,7 @@ class DashboardController {
     // 개별 모델 예측값
     const mlrPredicted = mlrResult ? mlrResult.prediction.predicted : null;
     const mlrR2 = mlrResult ? mlrResult.modelInfo.r2 : 0;
-    const xgbR2 = xgbModel ? (xgbModel.cv || 0) : 0;
+    const xgbR2 = xgbModel ? (xgbModel.r2_test || xgbModel.cv || 0) : 0;
 
     if (!xgbPredicted && !mlrPredicted) {
       resultEl.innerHTML = '<div style="text-align:center;color:#f44336;padding:1rem">예측 실패</div>';
