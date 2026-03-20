@@ -257,9 +257,287 @@ RULES:
     return { text };
   }
 
+  // ===== INSIGHT ENGINE (DB-computed, no RAG) =====
+
+  async _detectInsight(question, tables) {
+    const q = question.toLowerCase();
+    const h = { 'apikey': Chatbot.SUPABASE_KEY, 'Authorization': 'Bearer ' + Chatbot.SUPABASE_KEY };
+    const range = this.sport === 'skeleton' ? [50, 60] : [45, 65];
+    const baseUrl = `${Chatbot.SUPABASE_URL}/rest/v1/${tables.records}`;
+
+    // 1. 스타트 → 피니시 영향 ("스타트 줄이면", "스타트 영향", "0.1초")
+    if (q.includes('스타트') && (q.includes('줄이') || q.includes('빨라') || q.includes('영향') || q.includes('0.1'))) {
+      return await this._insightStartImpact(baseUrl, h, range);
+    }
+
+    // 2. 구간 분석 ("커브", "구간", "int")
+    if (q.includes('커브') || q.includes('구간') || (q.includes('int') && !q.includes('interview'))) {
+      return await this._insightSegment(q, baseUrl, h, range);
+    }
+
+    // 3. 서리 영향 ("서리", "frost", "이슬점")
+    if (q.includes('서리') || q.includes('frost') || q.includes('이슬점')) {
+      return await this._insightFrost(baseUrl, h, range);
+    }
+
+    // 4. 온도 영향 ("온도", "기온", "추우", "추워", "더워")
+    if (q.includes('온도') || q.includes('기온') || q.includes('추') || q.includes('더워') || q.includes('빙면')) {
+      return await this._insightTemperature(baseUrl, h, range);
+    }
+
+    // 5. 습도 영향 ("습도", "습한")
+    if (q.includes('습도') || q.includes('습한')) {
+      return await this._insightHumidity(baseUrl, h, range);
+    }
+
+    // 6. 풍속 영향 ("바람", "풍속", "wind")
+    if (q.includes('바람') || q.includes('풍속') || q.includes('wind')) {
+      return await this._insightWind(baseUrl, h, range);
+    }
+
+    return null;
+  }
+
+  async _fetchRecords(baseUrl, h, range, extra = '') {
+    const url = `${baseUrl}?select=start_time,finish,int1,int2,int3,int4,speed,air_temp,humidity_pct,pressure_hpa,wind_speed_ms,dewpoint_c,temp_avg&status=eq.OK&finish=gte.${range[0]}&finish=lte.${range[1]}${extra}&limit=2000`;
+    const resp = await fetch(url, { headers: h });
+    return await resp.json();
+  }
+
+  _linearRegression(xs, ys) {
+    const n = xs.length;
+    if (n < 5) return null;
+    const mx = xs.reduce((a, b) => a + b, 0) / n;
+    const my = ys.reduce((a, b) => a + b, 0) / n;
+    let sxy = 0, sxx = 0;
+    for (let i = 0; i < n; i++) {
+      sxy += (xs[i] - mx) * (ys[i] - my);
+      sxx += (xs[i] - mx) ** 2;
+    }
+    if (sxx === 0) return null;
+    const slope = sxy / sxx;
+    const intercept = my - slope * mx;
+    let ssRes = 0, ssTot = 0;
+    for (let i = 0; i < n; i++) {
+      ssRes += (ys[i] - (slope * xs[i] + intercept)) ** 2;
+      ssTot += (ys[i] - my) ** 2;
+    }
+    const r2 = ssTot > 0 ? 1 - ssRes / ssTot : 0;
+    return { slope, intercept, r2, n };
+  }
+
+  async _insightStartImpact(baseUrl, h, range) {
+    const data = await this._fetchRecords(baseUrl, h, range);
+    const xs = data.map(r => parseFloat(r.start_time)).filter(v => v > 3 && v < 8);
+    const ys = data.filter(r => parseFloat(r.start_time) > 3 && parseFloat(r.start_time) < 8)
+                    .map(r => parseFloat(r.finish));
+    const reg = this._linearRegression(xs, ys);
+    if (!reg) return { text: '데이터가 부족합니다.' };
+
+    const impact01 = Math.abs(reg.slope * 0.1);
+    const ratio = Math.abs(reg.slope);
+
+    let text = `📊 스타트 → 피니시 영향 분석 (${data.length}건)\n\n`;
+    text += `• 스타트 1초 단축 → 피니시 약 ${ratio.toFixed(2)}초 단축\n`;
+    text += `• 스타트 0.1초 단축 → 피니시 약 ${impact01.toFixed(2)}초 단축\n`;
+    text += `• 증폭 비율: ${ratio.toFixed(1)}배\n`;
+    text += `• 상관계수 R²: ${(reg.r2 * 100).toFixed(1)}%\n\n`;
+    text += `→ 스타트 0.1초 줄이면 피니시 약 ${impact01.toFixed(2)}초 빨라집니다.`;
+    return { text };
+  }
+
+  async _insightSegment(q, baseUrl, h, range) {
+    const data = await this._fetchRecords(baseUrl, h, range);
+    const valid = data.filter(r => r.int1 && r.int2 && r.int3 && r.int4 && r.finish);
+
+    if (valid.length < 10) return { text: '구간 데이터가 부족합니다.' };
+
+    // Calculate segment times
+    const segments = valid.map(r => {
+      const st = parseFloat(r.start_time), i1 = parseFloat(r.int1), i2 = parseFloat(r.int2);
+      const i3 = parseFloat(r.int3), i4 = parseFloat(r.int4), fin = parseFloat(r.finish);
+      return {
+        'Start→Int.1': i1 - st, 'Int.1→Int.2': i2 - i1, 'Int.2→Int.3': i3 - i2,
+        'Int.3→Int.4': i4 - i3, 'Int.4→Finish': fin - i4,
+      };
+    });
+
+    const segNames = ['Start→Int.1', 'Int.1→Int.2', 'Int.2→Int.3', 'Int.3→Int.4', 'Int.4→Finish'];
+    const curveInfo = ['커브 1~4', '커브 4~7', '커브 7~12', '커브 12~15', '커브 15~Finish'];
+
+    // Check if specific curve/int is mentioned
+    let targetSeg = -1;
+    for (let i = 0; i < segNames.length; i++) {
+      const num = q.match(/(\d+)/);
+      if (num) {
+        const cn = parseInt(num[1]);
+        if (cn <= 4 && i === 0) targetSeg = i;
+        else if (cn >= 4 && cn <= 7 && i === 1) targetSeg = i;
+        else if (cn >= 7 && cn <= 12 && i === 2) targetSeg = i;
+        else if (cn >= 12 && cn <= 15 && i === 3) targetSeg = i;
+        else if (cn >= 15 && i === 4) targetSeg = i;
+      }
+    }
+
+    let text = `📊 구간별 분석 (${valid.length}건)\n\n`;
+
+    for (let i = 0; i < segNames.length; i++) {
+      const times = segments.map(s => s[segNames[i]]).filter(v => !isNaN(v) && v > 0);
+      const avg = (times.reduce((a, b) => a + b, 0) / times.length).toFixed(2);
+      const std = Math.sqrt(times.reduce((s, v) => s + (v - avg) ** 2, 0) / times.length).toFixed(2);
+      const min = Math.min(...times).toFixed(2);
+      const max = Math.max(...times).toFixed(2);
+
+      // Correlation with finish
+      const finishes = valid.map(r => parseFloat(r.finish));
+      const reg = this._linearRegression(times, finishes);
+      const corrStr = reg ? `(피니시 상관: R²=${(reg.r2 * 100).toFixed(1)}%)` : '';
+
+      const marker = i === targetSeg ? ' ⭐' : '';
+      text += `${segNames[i]} ${curveInfo[i]}${marker}\n`;
+      text += `  평균: ${avg}초, 편차: ${std}초, 범위: ${min}~${max}초 ${corrStr}\n`;
+    }
+
+    // Find most variable segment
+    const stds = segNames.map((name, i) => {
+      const times = segments.map(s => s[name]).filter(v => !isNaN(v) && v > 0);
+      return { name, std: Math.sqrt(times.reduce((s, v) => s + (v - times.reduce((a, b) => a + b, 0) / times.length) ** 2, 0) / times.length) };
+    });
+    stds.sort((a, b) => b.std - a.std);
+    text += `\n→ 편차가 가장 큰 구간: ${stds[0].name} (${stds[0].std.toFixed(2)}초) — 기록 개선 여지가 가장 큼`;
+
+    return { text };
+  }
+
+  async _insightFrost(baseUrl, h, range) {
+    const data = await this._fetchRecords(baseUrl, h, range);
+    const withDew = data.filter(r => r.dewpoint_c != null && r.temp_avg != null);
+    if (withDew.length < 20) return { text: '서리 분석을 위한 데이터가 부족합니다.' };
+
+    const frost = withDew.filter(r => parseFloat(r.dewpoint_c) > parseFloat(r.temp_avg));
+    const noFrost = withDew.filter(r => parseFloat(r.dewpoint_c) <= parseFloat(r.temp_avg));
+
+    const avgFrost = frost.length > 0 ? (frost.reduce((s, r) => s + parseFloat(r.finish), 0) / frost.length).toFixed(2) : '-';
+    const avgNoFrost = noFrost.length > 0 ? (noFrost.reduce((s, r) => s + parseFloat(r.finish), 0) / noFrost.length).toFixed(2) : '-';
+
+    let text = `📊 서리(Frost) 영향 분석 (${withDew.length}건)\n\n`;
+    text += `• 서리 위험 (이슬점 > 빙면온도): ${frost.length}건, 평균 기록: ${avgFrost}초\n`;
+    text += `• 서리 없음: ${noFrost.length}건, 평균 기록: ${avgNoFrost}초\n`;
+
+    if (frost.length > 0 && noFrost.length > 0) {
+      const diff = (parseFloat(avgFrost) - parseFloat(avgNoFrost)).toFixed(2);
+      text += `\n→ 서리 발생 시 평균 ${diff}초 느려짐`;
+      text += `\n→ 원인: 빙면에 서리가 맺히면 마찰계수 증가`;
+      text += `\n→ 대책: 트랙 내부 습도 조절(제습)로 이슬점을 빙면 온도 아래로 유지`;
+    }
+    return { text };
+  }
+
+  async _insightTemperature(baseUrl, h, range) {
+    const data = await this._fetchRecords(baseUrl, h, range);
+    const withTemp = data.filter(r => r.temp_avg != null);
+    if (withTemp.length < 20) return { text: '온도 분석 데이터가 부족합니다.' };
+
+    const xs = withTemp.map(r => parseFloat(r.temp_avg));
+    const ys = withTemp.map(r => parseFloat(r.finish));
+    const reg = this._linearRegression(xs, ys);
+
+    // Group by temperature range
+    const groups = [
+      { label: '극저온 (< -8°C)', filter: r => parseFloat(r.temp_avg) < -8 },
+      { label: '저온 (-8 ~ -6°C)', filter: r => { const t = parseFloat(r.temp_avg); return t >= -8 && t < -6; } },
+      { label: '적정 (-6 ~ -4°C)', filter: r => { const t = parseFloat(r.temp_avg); return t >= -6 && t < -4; } },
+      { label: '고온 (> -4°C)', filter: r => parseFloat(r.temp_avg) >= -4 },
+    ];
+
+    let text = `📊 빙면 온도 vs 기록 분석 (${withTemp.length}건)\n\n`;
+    for (const g of groups) {
+      const subset = withTemp.filter(g.filter);
+      if (subset.length < 3) continue;
+      const avg = (subset.reduce((s, r) => s + parseFloat(r.finish), 0) / subset.length).toFixed(2);
+      text += `• ${g.label}: ${subset.length}건, 평균 ${avg}초\n`;
+    }
+
+    if (reg) {
+      text += `\n• 온도 1°C 하락 → 피니시 약 ${Math.abs(reg.slope).toFixed(3)}초 변화`;
+      text += `\n• R²: ${(reg.r2 * 100).toFixed(1)}%`;
+    }
+
+    // Top 10% records temperature
+    const sorted = withTemp.sort((a, b) => parseFloat(a.finish) - parseFloat(b.finish));
+    const top10 = sorted.slice(0, Math.ceil(sorted.length * 0.1));
+    const optTemp = (top10.reduce((s, r) => s + parseFloat(r.temp_avg), 0) / top10.length).toFixed(1);
+    text += `\n\n→ 상위 10% 기록의 평균 빙면 온도: ${optTemp}°C (최적 온도)`;
+
+    return { text };
+  }
+
+  async _insightHumidity(baseUrl, h, range) {
+    const data = await this._fetchRecords(baseUrl, h, range);
+    const withHum = data.filter(r => r.humidity_pct != null);
+    if (withHum.length < 20) return { text: '습도 분석 데이터가 부족합니다.' };
+
+    const groups = [
+      { label: '저습 (< 40%)', filter: r => parseFloat(r.humidity_pct) < 40 },
+      { label: '중간 (40~60%)', filter: r => { const h = parseFloat(r.humidity_pct); return h >= 40 && h < 60; } },
+      { label: '고습 (60~80%)', filter: r => { const h = parseFloat(r.humidity_pct); return h >= 60 && h < 80; } },
+      { label: '초고습 (> 80%)', filter: r => parseFloat(r.humidity_pct) >= 80 },
+    ];
+
+    let text = `📊 습도 vs 기록 분석 (${withHum.length}건)\n\n`;
+    for (const g of groups) {
+      const subset = withHum.filter(g.filter);
+      if (subset.length < 3) continue;
+      const avg = (subset.reduce((s, r) => s + parseFloat(r.finish), 0) / subset.length).toFixed(2);
+      text += `• ${g.label}: ${subset.length}건, 평균 ${avg}초\n`;
+    }
+
+    const xs = withHum.map(r => parseFloat(r.humidity_pct));
+    const ys = withHum.map(r => parseFloat(r.finish));
+    const reg = this._linearRegression(xs, ys);
+    if (reg) {
+      text += `\n• 습도 10% 증가 → 피니시 약 ${(reg.slope * 10).toFixed(3)}초 변화`;
+      text += `\n• R²: ${(reg.r2 * 100).toFixed(1)}%`;
+    }
+    return { text };
+  }
+
+  async _insightWind(baseUrl, h, range) {
+    const data = await this._fetchRecords(baseUrl, h, range);
+    const withWind = data.filter(r => r.wind_speed_ms != null);
+    if (withWind.length < 20) return { text: '풍속 분석 데이터가 부족합니다.' };
+
+    const groups = [
+      { label: '약풍 (< 2 m/s)', filter: r => parseFloat(r.wind_speed_ms) < 2 },
+      { label: '보통 (2~5 m/s)', filter: r => { const w = parseFloat(r.wind_speed_ms); return w >= 2 && w < 5; } },
+      { label: '강풍 (> 5 m/s)', filter: r => parseFloat(r.wind_speed_ms) >= 5 },
+    ];
+
+    let text = `📊 풍속 vs 기록 분석 (${withWind.length}건)\n\n`;
+    for (const g of groups) {
+      const subset = withWind.filter(g.filter);
+      if (subset.length < 3) continue;
+      const avg = (subset.reduce((s, r) => s + parseFloat(r.finish), 0) / subset.length).toFixed(2);
+      text += `• ${g.label}: ${subset.length}건, 평균 ${avg}초\n`;
+    }
+
+    const xs = withWind.map(r => parseFloat(r.wind_speed_ms));
+    const ys = withWind.map(r => parseFloat(r.finish));
+    const reg = this._linearRegression(xs, ys);
+    if (reg) {
+      text += `\n• 풍속 1m/s 증가 → 피니시 약 ${reg.slope.toFixed(3)}초 변화`;
+      text += `\n• R²: ${(reg.r2 * 100).toFixed(1)}%`;
+    }
+    return { text };
+  }
+
   async _pipeline(question) {
     this._lastQuestion = question;
     const tables = Chatbot.TABLES[this.sport];
+
+    // Insight shortcut: detect analytical questions → direct DB computation (no LLM SQL)
+    const insight = await this._detectInsight(question, tables);
+    if (insight) return insight;
 
     // Compare shortcut: detect 2+ Korean names → direct DB fetch (no LLM needed)
     const korNames = this._extractKoreanNames(question);
