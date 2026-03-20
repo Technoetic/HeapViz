@@ -45,13 +45,14 @@ IMPORTANT - NAME FORMAT:
 RULES:
 1. ONLY generate SELECT queries. Never INSERT/UPDATE/DELETE.
 2. Use only the table and column names listed above.
-3. Always filter status='OK' for performance queries.
-4. finish is in seconds (lower = better).
-5. start_time is in seconds.
+3. Always filter status='OK' AND finish > 45 AND finish < 65 for performance queries (to exclude abnormal records).
+4. finish is in seconds (lower = better). "최고 기록" means lowest finish time, use ORDER BY finish ASC LIMIT 1.
+5. start_time is in seconds (typically 4~6 seconds).
 6. Return ONLY the SQL query, nothing else.
 7. Use Supabase PostgREST syntax is NOT needed — use standard SQL.
 8. Limit results to 50 rows max.
-9. For name searches, use ILIKE for fuzzy matching.`;
+9. For name searches, use ILIKE for fuzzy matching.
+10. "평균 기록" = AVG(finish), "최고 기록" = MIN(finish), "최저 기록" = MAX(finish).`;
 
   constructor() {
     this.messages = [];
