@@ -398,24 +398,37 @@ class DashboardController {
       xgbModel = preModel;
     }
 
-    // MLR 예측
+    // MLR 예측 (Poly3+Ridge if available, fallback to classic MLR)
+    let mlrPredicted = null;
+    let mlrR2 = 0;
     let mlrResult = null;
-    try {
-      this.predModel.trainAll(okRecords);
-      mlrResult = this.predModel.trainGeneralMLR(okRecords, {
-        startTime: inp.startTime,
-        iceTemp: inp.iceTemp,
-        airTemp: inp.airTemp,
-        humidity: inp.humidity,
-        pressure: inp.pressure,
-        height: inp.height,
-        weight: inp.weight,
-      });
-    } catch (e) { /* ignore */ }
-
-    // 개별 모델 예측값
-    const mlrPredicted = mlrResult ? mlrResult.prediction.predicted : null;
-    const mlrR2 = mlrResult ? mlrResult.modelInfo.r2 : 0;
+    if (typeof POLY_MLR !== 'undefined' && typeof polyMLRPredict === 'function'
+        && (typeof CURRENT_SPORT === 'undefined' || CURRENT_SPORT === 'skeleton')) {
+      try {
+        const dewPoint = PredictionModel.calcDewPoint(inp.airTemp, inp.humidity);
+        const airDensity = PredictionModel.calcAirDensity(inp.airTemp, inp.humidity, inp.pressure);
+        const h = inp.height || 175;
+        const w = inp.weight || 75;
+        mlrPredicted = polyMLRPredict([inp.startTime, h, w, inp.iceTemp, airDensity, dewPoint]);
+        mlrR2 = POLY_MLR.cv || 0;
+      } catch (e) { /* fallback below */ }
+    }
+    if (mlrPredicted == null) {
+      try {
+        this.predModel.trainAll(okRecords);
+        mlrResult = this.predModel.trainGeneralMLR(okRecords, {
+          startTime: inp.startTime,
+          iceTemp: inp.iceTemp,
+          airTemp: inp.airTemp,
+          humidity: inp.humidity,
+          pressure: inp.pressure,
+          height: inp.height,
+          weight: inp.weight,
+        });
+        mlrPredicted = mlrResult ? mlrResult.prediction.predicted : null;
+        mlrR2 = mlrResult ? mlrResult.modelInfo.r2 : 0;
+      } catch (e) { /* ignore */ }
+    }
     const xgbR2 = xgbModel ? (xgbModel.r2 || 0) : 0;
 
     if (!xgbPredicted && !mlrPredicted) {
@@ -432,7 +445,8 @@ class DashboardController {
 
     // 모델 목록 구성
     const models = [];
-    if (mlrPredicted) models.push({ name: 'MLR', pred: mlrPredicted, r2: mlrR2 });
+    const mlrLabel = (typeof POLY_MLR !== 'undefined' && (typeof CURRENT_SPORT === 'undefined' || CURRENT_SPORT === 'skeleton')) ? 'Poly3+Ridge' : 'MLR';
+    if (mlrPredicted) models.push({ name: mlrLabel, pred: mlrPredicted, r2: mlrR2 });
     if (xgbPredicted) models.push({ name: 'XGBoost', pred: xgbPredicted, r2: xgbR2 });
     if (ensemblePredicted) models.push({ name: '앙상블', pred: ensemblePredicted, r2: null });
 
@@ -446,7 +460,7 @@ class DashboardController {
       const color = isBest ? '#4caf50' : '#888';
       const border = isBest ? '2px solid #4caf50' : '1px solid rgba(255,255,255,0.1)';
       const label = isBest ? ' ⭐' : '';
-      const info = m.r2 != null ? `R² ${(m.r2 * 100).toFixed(1)}%` : 'XGB 80% + MLR 20%';
+      const info = m.r2 != null ? `R² ${(m.r2 * 100).toFixed(1)}%` : `XGB 80% + ${mlrLabel} 20%`;
       return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-radius:6px;border:${border};margin-bottom:4px;background:rgba(255,255,255,0.03)">
         <span style="font-weight:600;color:${color};min-width:80px">${m.name}${label}</span>
         <span style="font-size:1.1rem;font-weight:700;color:${isBest ? '#fff' : '#aaa'}">${m.pred.toFixed(2)}s</span>
