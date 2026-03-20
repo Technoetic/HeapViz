@@ -63,6 +63,19 @@ V2_PARAMS = dict(
     random_state=42, verbosity=0,
 )
 
+# Noise athletes to exclude (degrades CV R2)
+EXCLUDE_ATHLETES = {
+    'ATH-DE295AEB',  # KAWANO Hayato (JPN) +4.6%
+    'ATH-AC042631',  # DONSBERGER Kyle (CAN) +2.2%
+    'ATH-64E845EE',  # RUSSWURM Hannah (FIN) +2.2%
+    'ATH-0A5C0017',  # PENG Lin-Wei (TPE) +1.2%
+    'ATH-C338C9DD',  # RODRIGUEZ Adrian (ESP) +1.0%
+    'ATH-60AB5B2A',  # FRIMPONG Akwasi (GHA) +0.7%
+    'ATH-0038E3B0',  # BAUER Jeff (LUX) +0.7%
+    'ATH-1A4821B0',  # BOSTOCK Laurence (GBR) +0.7%
+    'ATH-F8836987',  # FREELING Colin (BEL) +0.5%
+}
+
 # ===== SKELETON V2 (core only + regularization) =====
 print("Loading skeleton data...")
 all_rows = []
@@ -81,6 +94,8 @@ while True:
 valid = []
 for r in all_rows:
     try:
+        if r.get('athlete_id') in EXCLUDE_ATHLETES:
+            continue
         ath = r.get('athletes', {})
         h = float(ath.get('height_cm') or 0)
         w = float(ath.get('weight_kg') or 0)
