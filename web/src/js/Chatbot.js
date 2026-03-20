@@ -4,8 +4,12 @@
  * Pipeline: Intent → SQL (parallel vote) → DB exec → Answer + Factcheck
  */
 class Chatbot {
-  static API_URL = 'https://bizrouter.ai/api/v1/chat/completions';
-  static API_KEY = 'sk-br-v1-ab47dd953c844611a9dda14f3a60fa54_uE2bL5jqIHgfnYnvP7pSxieymu10ORU9I_H-Gn7aCgU';
+  static API_URL = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+    ? 'https://bizrouter.ai/api/v1/chat/completions'
+    : '/api/llm/chat/completions';
+  static API_KEY = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+    ? 'sk-br-v1-ab47dd953c844611a9dda14f3a60fa54_uE2bL5jqIHgfnYnvP7pSxieymu10ORU9I_H-Gn7aCgU'
+    : '';
   static MODEL = 'google/gemini-2.5-flash-lite';
   static SUPABASE_URL = 'https://dxaehcocrbvhatyfmrvp.supabase.co';
   static SUPABASE_KEY = typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY
@@ -298,8 +302,9 @@ RULES:
     return null;
   }
 
-  async _fetchRecords(baseUrl, h, range, extra = '') {
-    const url = `${baseUrl}?select=start_time,finish,int1,int2,int3,int4,speed,air_temp,humidity_pct,pressure_hpa,wind_speed_ms,dewpoint_c,temp_avg&status=eq.OK&finish=gte.${range[0]}&finish=lte.${range[1]}${extra}&limit=2000`;
+  async _fetchRecords(baseUrl, h, range, extra = '', normalOnly = false) {
+    const normalFilter = normalOnly ? '&is_normal=eq.true' : `&status=eq.OK&finish=gte.${range[0]}&finish=lte.${range[1]}`;
+    const url = `${baseUrl}?select=start_time,finish,int1,int2,int3,int4,seg1,seg2,seg3,seg4,seg5,speed,air_temp,humidity_pct,pressure_hpa,wind_speed_ms,dewpoint_c,temp_avg${normalFilter}${extra}&limit=2000`;
     const resp = await fetch(url, { headers: h });
     return await resp.json();
   }
@@ -345,8 +350,7 @@ RULES:
   }
 
   async _insightStartImpact(baseUrl, h, range) {
-    const raw = await this._fetchRecords(baseUrl, h, range);
-    const data = this._filterNormal(raw);
+    const data = await this._fetchRecords(baseUrl, h, range, '', true);
     const xs = data.map(r => parseFloat(r.start_time));
     const ys = data.map(r => parseFloat(r.finish));
     const reg = this._linearRegression(xs, ys);
@@ -365,20 +369,18 @@ RULES:
   }
 
   async _insightSegment(q, baseUrl, h, range) {
-    const raw = await this._fetchRecords(baseUrl, h, range);
-    const valid = this._filterNormal(raw);
+    const valid = await this._fetchRecords(baseUrl, h, range, '', true);
 
     if (valid.length < 10) return { text: '구간 데이터가 부족합니다.' };
 
-    // Calculate segment times
-    const segments = valid.map(r => {
-      const st = parseFloat(r.start_time), i1 = parseFloat(r.int1), i2 = parseFloat(r.int2);
-      const i3 = parseFloat(r.int3), i4 = parseFloat(r.int4), fin = parseFloat(r.finish);
-      return {
-        'Start→Int.1': i1 - st, 'Int.1→Int.2': i2 - i1, 'Int.2→Int.3': i3 - i2,
-        'Int.3→Int.4': i4 - i3, 'Int.4→Finish': fin - i4,
-      };
-    });
+    // Use pre-computed segment columns from DB
+    const segments = valid.map(r => ({
+      'Start→Int.1': parseFloat(r.seg1),
+      'Int.1→Int.2': parseFloat(r.seg2),
+      'Int.2→Int.3': parseFloat(r.seg3),
+      'Int.3→Int.4': parseFloat(r.seg4),
+      'Int.4→Finish': parseFloat(r.seg5),
+    }));
 
     const segNames = ['Start→Int.1', 'Int.1→Int.2', 'Int.2→Int.3', 'Int.3→Int.4', 'Int.4→Finish'];
     const curveInfo = ['커브 1~4', '커브 4~7', '커브 7~12', '커브 12~15', '커브 15~Finish'];
@@ -787,12 +789,11 @@ Reply with ONLY a number between 0.0 and 1.0.` },
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 30000);
+        const hdrs = { 'Content-Type': 'application/json' };
+        if (Chatbot.API_KEY) hdrs['Authorization'] = 'Bearer ' + Chatbot.API_KEY;
         const resp = await fetch(Chatbot.API_URL, {
           method: 'POST',
-          headers: {
-            'Authorization': 'Bearer ' + Chatbot.API_KEY,
-            'Content-Type': 'application/json',
-          },
+          headers: hdrs,
           body: JSON.stringify({
             model: Chatbot.MODEL,
             messages,
