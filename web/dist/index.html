@@ -7727,8 +7727,8 @@ Reply with ONLY a number between 0.0 and 1.0.` },
       }
     }
 
-    // If >30% of numbers are wrong, fall back to template
-    if (ansNums.length > 0 && wrongCount / ansNums.length > 0.3) {
+    // If ANY decimal number is wrong, fall back to template (strict mode)
+    if (wrongCount > 0) {
       return this._templateFallback('', dbResult, aggregated);
     }
     return answer;
@@ -7829,10 +7829,10 @@ Generate a single SELECT SQL query:`;
 
     const filters = [];
     if (!upper.includes("STATUS")) filters.push("status = 'OK'");
-    if (!upper.includes("FINISH >") && !upper.includes("FINISH BETWEEN") && upper.includes("FINISH")) {
-      filters.push("finish BETWEEN 45 AND 65");
-    } else if (!upper.includes("FINISH")) {
-      filters.push("finish BETWEEN 45 AND 65");
+    // Sport-specific normal finish range
+    const range = this.sport === 'skeleton' ? [49, 60] : [45, 65];
+    if (!upper.includes("FINISH >") && !upper.includes("FINISH BETWEEN") && !upper.includes("FINISH <")) {
+      filters.push(`finish BETWEEN ${range[0]} AND ${range[1]}`);
     }
 
     if (filters.length === 0) return sql;
