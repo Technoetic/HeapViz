@@ -686,12 +686,25 @@ CRITICAL RULES:
     return answer; // For now, return as-is (factcheck logging only)
   }
 
+  static DISPLAY_COLS = {
+    date: '날짜', finish: '기록(초)', start_time: '스타트(초)',
+    int1: 'Int.1', int2: 'Int.2', int3: 'Int.3', int4: 'Int.4',
+    speed: '속도', athlete_id: '선수ID',
+    air_temp: '기온', humidity_pct: '습도', pressure_hpa: '기압',
+    wind_speed_ms: '풍속',
+  };
+
   _buildTable(data) {
     if (!data || data.length === 0) return '';
-    const cols = Object.keys(data[0]);
+    // Show only key columns that exist in data
+    const allCols = Object.keys(data[0]);
+    const priority = ['date', 'athlete_id', 'finish', 'start_time', 'int1', 'int2', 'int3', 'int4', 'speed', 'air_temp', 'humidity_pct'];
+    const cols = priority.filter(c => allCols.includes(c));
+    if (cols.length === 0) return '';
+
     const maxRows = Math.min(data.length, 10);
     let html = '<table class="chatbot-table"><thead><tr>';
-    for (const c of cols) html += `<th>${this._escHtml(c)}</th>`;
+    for (const c of cols) html += `<th>${Chatbot.DISPLAY_COLS[c] || c}</th>`;
     html += '</tr></thead><tbody>';
     for (let i = 0; i < maxRows; i++) {
       html += '<tr>';
