@@ -142,6 +142,45 @@ RULES:
     return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
   }
 
+  async _naturalWrap(question, factText) {
+    // If factText is very short or an error/status message, return as-is
+    if (!factText || factText.length < 20 || factText.startsWith('이 질문은') || factText.startsWith('죄송') || factText.startsWith('해당 조건') || factText.startsWith('비교할')) {
+      return factText;
+    }
+
+    try {
+      const wrapped = await this._callLLM([
+        { role: 'system', content: `You rewrite dry data reports into friendly, conversational Korean.
+
+ABSOLUTE RULES:
+1. You MUST include ALL numbers from the original text EXACTLY as-is. Do not round, change, or omit any number.
+2. Do NOT add any facts, numbers, or claims not in the original.
+3. Do NOT add opinions or predictions.
+4. Keep it concise (3-5 sentences).
+5. Use a warm, coach-like tone with occasional emoji.
+6. If the original has bullet points or rankings, keep them but make them flow naturally.` },
+        { role: 'user', content: `Original data:\n${factText}\n\nRewrite naturally:` },
+      ], 0.3);
+
+      // Verify: all numbers from factText must appear in wrapped
+      const factNums = factText.match(/\d+\.?\d*/g) || [];
+      const wrapNums = wrapped.match(/\d+\.?\d*/g) || [];
+      const wrapNumSet = new Set(wrapNums);
+
+      // Check key numbers (decimals like 50.71, 52.128)
+      const keyNums = factNums.filter(n => n.includes('.'));
+      const allPresent = keyNums.every(n => wrapNumSet.has(n));
+
+      if (allPresent) {
+        return wrapped;
+      }
+      // Fallback: return original factText
+      return factText;
+    } catch (e) {
+      return factText;
+    }
+  }
+
   async _onSend() {
     const input = document.getElementById('chatbot-input');
     const text = input.value.trim();
@@ -154,13 +193,11 @@ RULES:
 
     try {
       const answer = await this._pipeline(text);
+      // LLM natural language wrapping (facts are locked, style only)
+      const finalText = await this._naturalWrap(text, answer.text);
       this._removeLoading();
-      if (answer.table) {
-        this._addBotMessage(answer.text + answer.table, true);
-      } else {
-        this._addBotMessage(answer.text);
-      }
-      this.messages.push({ role: 'assistant', content: answer.text });
+      this._addBotMessage(finalText);
+      this.messages.push({ role: 'assistant', content: finalText });
     } catch (e) {
       this._removeLoading();
       this._addBotMessage('죄송합니다. 오류가 발생했습니다: ' + e.message);
