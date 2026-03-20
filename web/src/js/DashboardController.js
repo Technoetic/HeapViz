@@ -380,15 +380,19 @@ class DashboardController {
       ? XGB_MODELS[CURRENT_SPORT] : (typeof XGB_MODELS !== 'undefined' ? XGB_MODELS : null);
     const preModel = sportModels ? sportModels.pre : null;
     if (preModel) {
-      const dewPoint = PredictionModel.calcDewPoint(inp.airTemp, inp.humidity);
-      const isFemale = inp.gender === 'W' ? 1 : 0;
-      const features = [inp.startTime, inp.iceTemp, inp.airTemp, inp.humidity, inp.pressure, dewPoint, inp.windSpeed, isFemale];
-      if (preModel.id_map && inp.player && inp.player !== '__general__') {
-        const ath = this.#resolveAthlete(inp.player);
-        const encVal = ath ? (preModel.id_map[ath.athlete_id] ?? -1) : -1;
-        features.push(encVal);
-      } else if (preModel.id_map) {
-        features.push(-1);
+      let features;
+      if (preModel.v === 2) {
+        // V2: start_time, height_cm, weight_kg, temp_avg, air_density, dewpoint_c
+        const dewPoint = PredictionModel.calcDewPoint(inp.airTemp, inp.humidity);
+        const airDensity = PredictionModel.calcAirDensity(inp.airTemp, inp.humidity, inp.pressure);
+        const h = inp.height || 175;
+        const w = inp.weight || 75;
+        features = [inp.startTime, h, w, inp.iceTemp, airDensity, dewPoint];
+      } else {
+        // V1: start_time, temp_avg, air_temp, humidity_pct, pressure_hpa, dewpoint_c, wind_speed_ms, is_female
+        const dewPoint = PredictionModel.calcDewPoint(inp.airTemp, inp.humidity);
+        const isFemale = inp.gender === 'W' ? 1 : 0;
+        features = [inp.startTime, inp.iceTemp, inp.airTemp, inp.humidity, inp.pressure, dewPoint, inp.windSpeed, isFemale];
       }
       xgbPredicted = xgbPredict(preModel, features);
       xgbModel = preModel;
@@ -419,11 +423,11 @@ class DashboardController {
       return;
     }
 
-    // 앙상블: MLR 가중치 높게 (MLR이 일반적으로 더 정확)
+    // 앙상블: XGB 가중치 높게 (V2에서 XGB가 더 정확)
     let ensemblePredicted = null;
     if (xgbPredicted && mlrPredicted) {
-      const wMLR = 0.7, wXGB = 0.3;
-      ensemblePredicted = mlrPredicted * wMLR + xgbPredicted * wXGB;
+      const wXGB = 0.8, wMLR = 0.2;
+      ensemblePredicted = xgbPredicted * wXGB + mlrPredicted * wMLR;
     }
 
     // 모델 목록 구성
@@ -442,7 +446,7 @@ class DashboardController {
       const color = isBest ? '#4caf50' : '#888';
       const border = isBest ? '2px solid #4caf50' : '1px solid rgba(255,255,255,0.1)';
       const label = isBest ? ' ⭐' : '';
-      const info = m.r2 != null ? `R² ${(m.r2 * 100).toFixed(1)}%` : 'MLR 70% + XGB 30%';
+      const info = m.r2 != null ? `R² ${(m.r2 * 100).toFixed(1)}%` : 'XGB 80% + MLR 20%';
       return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-radius:6px;border:${border};margin-bottom:4px;background:rgba(255,255,255,0.03)">
         <span style="font-weight:600;color:${color};min-width:80px">${m.name}${label}</span>
         <span style="font-size:1.1rem;font-weight:700;color:${isBest ? '#fff' : '#aaa'}">${m.pred.toFixed(2)}s</span>
