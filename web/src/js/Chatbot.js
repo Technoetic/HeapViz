@@ -301,16 +301,24 @@ ABSOLUTE RULES:
   // ===== INSIGHT ENGINE (LLM function selection + DB computation) =====
 
   static INSIGHT_FUNCTIONS = [
-    { name: 'start_impact', desc: 'Analyze how start time affects finish time. Use for: improving start, push time, 0.1s effect, acceleration.' },
-    { name: 'segment', desc: 'Analyze track segments and curves. Use for: curve analysis, which section, segment times, track overview, where to improve.' },
-    { name: 'curve_detail', desc: 'Get specific curve info (radius, banking, difficulty, coaching tip). Use for: specific curve number, curve danger, curve tip.' },
-    { name: 'curve_ranking', desc: 'Rank curves by difficulty/danger. Use for: most dangerous, hardest curve, easiest curve, DNF location.' },
-    { name: 'frost', desc: 'Analyze frost/dew point effect on records. Use for: frost, dew point, ice surface moisture, humidity on ice.' },
-    { name: 'temperature', desc: 'Analyze ice/air temperature effect. Use for: temperature, cold, warm, optimal temp, ice condition.' },
-    { name: 'humidity', desc: 'Analyze humidity effect. Use for: humidity, moisture, dry/wet conditions.' },
-    { name: 'wind', desc: 'Analyze wind effect. Use for: wind, breeze, gust, aerodynamics.' },
-    { name: 'player_records', desc: 'Get a specific player records/stats. Use for: player name mentioned, personal best, average.' },
-    { name: 'general_sql', desc: 'General database query. Use when no other function matches.' },
+    { name: 'start_impact', desc: 'Analyze how start time affects finish. Use for: improving start, push time, 0.1s effect, acceleration.' },
+    { name: 'segment', desc: 'Analyze track segments/curves. Use for: curve analysis, section times, where to improve.' },
+    { name: 'curve_detail', desc: 'Specific curve info. Use for: specific curve number, curve tip.' },
+    { name: 'curve_ranking', desc: 'Rank curves by danger. Use for: most dangerous, hardest, DNF location.' },
+    { name: 'frost', desc: 'Frost/dew point effect. Use for: frost, dew, ice moisture.' },
+    { name: 'temperature', desc: 'Temperature effect. Use for: temp, cold, warm, ice condition, optimal.' },
+    { name: 'humidity', desc: 'Humidity effect. Use for: humidity, moisture, dry/wet.' },
+    { name: 'wind', desc: 'Wind effect. Use for: wind, breeze, gust.' },
+    { name: 'player_records', desc: 'Player stats. Use for: player name, personal best, average.' },
+    { name: 'trend', desc: 'Player record trend over time. Use for: improving, getting better/worse, trend, progress, form.' },
+    { name: 'consistency', desc: 'Player consistency ranking. Use for: stable, consistent, reliable, variance, deviation.' },
+    { name: 'best_condition', desc: 'Best record conditions. Use for: what conditions, when best, optimal weather for records.' },
+    { name: 'time_of_season', desc: 'Season timing analysis. Use for: early/late season, which month, December vs January.' },
+    { name: 'start_vs_technique', desc: 'Start speed vs driving technique. Use for: fast start slow finish, technique, driving skill.' },
+    { name: 'body_effect', desc: 'Height/weight effect on records. Use for: tall, heavy, body, weight advantage, height.' },
+    { name: 'run_fatigue', desc: 'Run number fatigue. Use for: first/second/third run, fatigue, which run is fastest.' },
+    { name: 'head_to_head', desc: 'Direct comparison on same day. Use for: beat, win, head to head, same day matchup.' },
+    { name: 'general_sql', desc: 'General DB query. Use when no other function matches.' },
   ];
 
   async _detectInsight(question, tables) {
@@ -405,6 +413,198 @@ RULES:
             }
           }
           return null;
+        }
+        case 'trend': {
+          const korNames = this._extractKoreanNames(question);
+          const resolved = korNames.length > 0 ? await this._resolveKoreanName(korNames[0], tables) : null;
+          const nameFilter = resolved ? `&name=eq.${encodeURIComponent(resolved.engName)}` : '';
+          const url = `${baseUrl}?select=finish,date,name&status=eq.OK&finish=gte.${range[0]}&finish=lte.${range[1]}${nameFilter}&order=date&limit=200`;
+          const data = (await (await fetch(url, { headers: h })).json());
+          if (data.length < 5) return { text: '추이 분석을 위한 데이터가 부족합니다.' };
+          const half = Math.floor(data.length / 2);
+          const first = data.slice(0, half).map(r => parseFloat(r.finish));
+          const second = data.slice(half).map(r => parseFloat(r.finish));
+          const avgFirst = (first.reduce((a, b) => a + b, 0) / first.length).toFixed(2);
+          const avgSecond = (second.reduce((a, b) => a + b, 0) / second.length).toFixed(2);
+          const diff = (avgFirst - avgSecond).toFixed(2);
+          const who = resolved ? resolved.krName : '전체';
+          let text = `📈 ${who} 기록 추이 분석 (${data.length}건)\n\n`;
+          text += `• 전반기 (${data[0].date}~${data[half-1].date}): 평균 ${avgFirst}초\n`;
+          text += `• 후반기 (${data[half].date}~${data[data.length-1].date}): 평균 ${avgSecond}초\n`;
+          text += diff > 0 ? `\n→ ${Math.abs(diff)}초 개선됨 (기록 향상 추세)` : `\n→ ${Math.abs(diff)}초 하락 (기록 저하 추세)`;
+          return { text };
+        }
+        case 'consistency': {
+          const url = `${baseUrl}?select=finish,name,athlete_id&is_normal=eq.true&order=name&limit=2000`;
+          const data = (await (await fetch(url, { headers: h })).json());
+          const groups = {};
+          for (const r of data) {
+            const k = r.athlete_id || r.name;
+            if (!groups[k]) groups[k] = { name: r.name, vals: [] };
+            groups[k].vals.push(parseFloat(r.finish));
+          }
+          const stats = Object.entries(groups)
+            .filter(([, v]) => v.vals.length >= 5)
+            .map(([aid, v]) => {
+              const avg = v.vals.reduce((a, b) => a + b, 0) / v.vals.length;
+              const std = Math.sqrt(v.vals.reduce((s, x) => s + (x - avg) ** 2, 0) / v.vals.length);
+              return { aid, name: v.name, avg: +avg.toFixed(2), std: +std.toFixed(2), n: v.vals.length };
+            })
+            .sort((a, b) => a.std - b.std);
+          let text = `📊 선수 일관성 순위 (편차 작을수록 안정적, 5건 이상)\n\n`;
+          for (const s of stats.slice(0, 10)) {
+            text += `${s.name}: 편차 ${s.std}초, 평균 ${s.avg}초 (${s.n}건)\n`;
+          }
+          return { text };
+        }
+        case 'best_condition': {
+          const url = `${baseUrl}?select=finish,air_temp,humidity_pct,pressure_hpa,wind_speed_ms,temp_avg,date&is_normal=eq.true&air_temp=not.is.null&order=finish&limit=2000`;
+          const data = (await (await fetch(url, { headers: h })).json());
+          if (data.length < 20) return { text: '조건 분석 데이터가 부족합니다.' };
+          const top10 = data.slice(0, Math.ceil(data.length * 0.1));
+          const avg = (key) => +(top10.reduce((s, r) => s + parseFloat(r[key] || 0), 0) / top10.length).toFixed(1);
+          let text = `📊 상위 10% 최고 기록의 환경 조건 (${top10.length}건)\n\n`;
+          text += `• 기온: 평균 ${avg('air_temp')}°C\n`;
+          text += `• 빙면 온도: 평균 ${avg('temp_avg')}°C\n`;
+          text += `• 습도: 평균 ${avg('humidity_pct')}%\n`;
+          text += `• 기압: 평균 ${avg('pressure_hpa')}hPa\n`;
+          text += `• 풍속: 평균 ${avg('wind_speed_ms')}m/s\n`;
+          text += `\n→ 이 조건에서 가장 좋은 기록이 나옵니다.`;
+          return { text };
+        }
+        case 'time_of_season': {
+          const url = `${baseUrl}?select=finish,date&is_normal=eq.true&order=date&limit=2000`;
+          const data = (await (await fetch(url, { headers: h })).json());
+          if (data.length < 20) return { text: '시즌 분석 데이터가 부족합니다.' };
+          const months = {};
+          for (const r of data) {
+            const m = r.date.substring(0, 7);
+            if (!months[m]) months[m] = [];
+            months[m].push(parseFloat(r.finish));
+          }
+          let text = `📊 월별 평균 기록 분석\n\n`;
+          const sorted = Object.entries(months).sort(([a], [b]) => a.localeCompare(b));
+          for (const [month, vals] of sorted) {
+            const avg = (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(2);
+            text += `• ${month}: 평균 ${avg}초 (${vals.length}건)\n`;
+          }
+          const best = sorted.reduce((a, b) => {
+            const avgA = a[1].reduce((s, v) => s + v, 0) / a[1].length;
+            const avgB = b[1].reduce((s, v) => s + v, 0) / b[1].length;
+            return avgA < avgB ? a : b;
+          });
+          text += `\n→ 가장 기록이 좋은 달: ${best[0]}`;
+          return { text };
+        }
+        case 'start_vs_technique': {
+          const url = `${baseUrl}?select=finish,start_time,name,athlete_id&is_normal=eq.true&order=name&limit=2000`;
+          const data = (await (await fetch(url, { headers: h })).json());
+          const groups = {};
+          for (const r of data) {
+            const k = r.athlete_id || r.name;
+            if (!groups[k]) groups[k] = { name: r.name, starts: [], finishes: [] };
+            groups[k].starts.push(parseFloat(r.start_time));
+            groups[k].finishes.push(parseFloat(r.finish));
+          }
+          const stats = Object.entries(groups)
+            .filter(([, v]) => v.starts.length >= 5)
+            .map(([, v]) => {
+              const avgSt = v.starts.reduce((a, b) => a + b, 0) / v.starts.length;
+              const avgFin = v.finishes.reduce((a, b) => a + b, 0) / v.finishes.length;
+              const technique = avgFin - avgSt; // lower = better driving
+              return { name: v.name, avgSt: +avgSt.toFixed(2), avgFin: +avgFin.toFixed(2), technique: +technique.toFixed(2), n: v.starts.length };
+            });
+          const byTech = [...stats].sort((a, b) => a.technique - b.technique);
+          const byStart = [...stats].sort((a, b) => a.avgSt - b.avgSt);
+          let text = `📊 스타트 속도 vs 주행 기술 분석\n\n`;
+          text += `🏃 스타트 빠른 선수 Top 5:\n`;
+          for (const s of byStart.slice(0, 5)) text += `  ${s.name}: 스타트 ${s.avgSt}초, 피니시 ${s.avgFin}초\n`;
+          text += `\n🎯 주행 기술 좋은 선수 Top 5 (주행 구간 시간 짧은 순):\n`;
+          for (const s of byTech.slice(0, 5)) text += `  ${s.name}: 주행구간 ${s.technique}초, 스타트 ${s.avgSt}초, 피니시 ${s.avgFin}초\n`;
+          return { text };
+        }
+        case 'body_effect': {
+          const athUrl = `${Chatbot.SUPABASE_URL}/rest/v1/${tables.athletes}?select=name,height_cm,weight_kg&height_cm=not.is.null&weight_kg=not.is.null`;
+          const athletes = (await (await fetch(athUrl, { headers: h })).json());
+          const athMap = {};
+          for (const a of athletes) athMap[a.name] = a;
+          const url = `${baseUrl}?select=finish,name&is_normal=eq.true&limit=2000`;
+          const data = (await (await fetch(url, { headers: h })).json());
+          const groups = {};
+          for (const r of data) {
+            if (!athMap[r.name]) continue;
+            if (!groups[r.name]) groups[r.name] = { ...athMap[r.name], vals: [] };
+            groups[r.name].vals.push(parseFloat(r.finish));
+          }
+          const stats = Object.values(groups)
+            .filter(v => v.vals.length >= 5)
+            .map(v => ({ name: v.name, h: v.height_cm, w: v.weight_kg, avg: +(v.vals.reduce((a, b) => a + b, 0) / v.vals.length).toFixed(2), n: v.vals.length }));
+          if (stats.length < 5) return { text: '신체 데이터가 있는 선수가 부족합니다.' };
+          const heights = stats.map(s => s.h);
+          const finishes = stats.map(s => s.avg);
+          const weights = stats.map(s => s.w);
+          const regH = this._linearRegression(heights, finishes);
+          const regW = this._linearRegression(weights, finishes);
+          let text = `📊 신체 조건 vs 기록 분석 (${stats.length}명)\n\n`;
+          if (regH) text += `• 키 1cm 증가 → 피니시 ${regH.slope > 0 ? '+' : ''}${regH.slope.toFixed(3)}초 (R²=${(regH.r2 * 100).toFixed(1)}%)\n`;
+          if (regW) text += `• 체중 1kg 증가 → 피니시 ${regW.slope > 0 ? '+' : ''}${regW.slope.toFixed(3)}초 (R²=${(regW.r2 * 100).toFixed(1)}%)\n`;
+          text += `\n🏋️ 체중 가벼운 순 (기록 포함):\n`;
+          const byW = [...stats].sort((a, b) => a.w - b.w);
+          for (const s of byW.slice(0, 5)) text += `  ${s.name}: ${s.h}cm/${s.w}kg → 평균 ${s.avg}초\n`;
+          return { text };
+        }
+        case 'run_fatigue': {
+          const url = `${baseUrl}?select=finish,run&is_normal=eq.true&run=not.is.null&order=run&limit=2000`;
+          const data = (await (await fetch(url, { headers: h })).json());
+          const runs = {};
+          for (const r of data) {
+            const rn = parseInt(r.run);
+            if (isNaN(rn) || rn < 1 || rn > 10) continue;
+            if (!runs[rn]) runs[rn] = [];
+            runs[rn].push(parseFloat(r.finish));
+          }
+          let text = `📊 주행 순서별 기록 분석 (피로도)\n\n`;
+          const sorted = Object.entries(runs).sort(([a], [b]) => a - b);
+          for (const [rn, vals] of sorted) {
+            const avg = (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(2);
+            text += `• ${rn}번째 주행: 평균 ${avg}초 (${vals.length}건)\n`;
+          }
+          if (sorted.length >= 2) {
+            const first = sorted[0][1].reduce((a, b) => a + b, 0) / sorted[0][1].length;
+            const last = sorted[sorted.length - 1][1].reduce((a, b) => a + b, 0) / sorted[sorted.length - 1][1].length;
+            const diff = (last - first).toFixed(2);
+            text += `\n→ 1번째 vs ${sorted[sorted.length - 1][0]}번째: ${diff > 0 ? '+' : ''}${diff}초 차이`;
+          }
+          return { text };
+        }
+        case 'head_to_head': {
+          const korNames = this._extractKoreanNames(question);
+          if (korNames.length < 2) return { text: '두 선수 이름을 입력해주세요.' };
+          const resolved = await Promise.all(korNames.slice(0, 2).map(n => this._resolveKoreanName(n, tables)));
+          if (resolved.some(r => !r)) return { text: '선수를 찾을 수 없습니다.' };
+          const [a, b] = resolved;
+          const urlA = `${baseUrl}?select=finish,date&name=eq.${encodeURIComponent(a.engName)}&is_normal=eq.true&order=date&limit=200`;
+          const urlB = `${baseUrl}?select=finish,date&name=eq.${encodeURIComponent(b.engName)}&is_normal=eq.true&order=date&limit=200`;
+          const [dataA, dataB] = await Promise.all([
+            fetch(urlA, { headers: h }).then(r => r.json()),
+            fetch(urlB, { headers: h }).then(r => r.json()),
+          ]);
+          const datesA = {};
+          for (const r of dataA) { if (!datesA[r.date]) datesA[r.date] = []; datesA[r.date].push(parseFloat(r.finish)); }
+          const datesB = {};
+          for (const r of dataB) { if (!datesB[r.date]) datesB[r.date] = []; datesB[r.date].push(parseFloat(r.finish)); }
+          const common = Object.keys(datesA).filter(d => datesB[d]);
+          let winsA = 0, winsB = 0;
+          let text = `📊 ${a.krName} vs ${b.krName} 직접 대결 (같은 날)\n\n`;
+          for (const d of common.sort()) {
+            const bestA = Math.min(...datesA[d]);
+            const bestB = Math.min(...datesB[d]);
+            const winner = bestA < bestB ? a.krName : b.krName;
+            if (bestA < bestB) winsA++; else winsB++;
+            text += `• ${d}: ${a.krName} ${bestA.toFixed(2)}초 vs ${b.krName} ${bestB.toFixed(2)}초 → ${winner} 승\n`;
+          }
+          text += `\n→ 전적: ${a.krName} ${winsA}승 vs ${b.krName} ${winsB}승 (총 ${common.length}회)`;
+          return { text };
         }
         default:
           return null;
