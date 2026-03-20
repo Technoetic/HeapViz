@@ -169,6 +169,7 @@ RULES:
   //
 
   async _pipeline(question) {
+    this._lastQuestion = question;
     const tables = Chatbot.TABLES[this.sport];
 
     // ── Phase 1: Intent + SQL generation (6 calls parallel) ──
@@ -239,7 +240,7 @@ RULES:
 
     // If all factchecks fail, use template fallback
     let finalAnswer;
-    if (bestScore < 0.5) {
+    if (bestScore < 0.8) {
       finalAnswer = this._templateFallback(question, dbResult, aggregated);
     } else {
       finalAnswer = this._codeFactcheck(answers[bestIdx], dbResult, aggregated);
@@ -268,6 +269,19 @@ RULES:
 
   _templateFallback(question, data, agg) {
     // Zero-LLM fallback: pure template
+    const q = (question || '').toLowerCase();
+    // Specific question patterns
+    if (q.includes('최고') || q.includes('최소') || q.includes('가장 빠른') || q.includes('best')) {
+      if (agg.finish_min) {
+        const bestRow = data.find(r => parseFloat(r.finish) === agg.finish_min);
+        const who = bestRow && bestRow.name ? ` (${bestRow.name})` : '';
+        return `최고 기록: ${agg.finish_min}초${who} (총 ${agg.count}건 중)`;
+      }
+    }
+    if (q.includes('평균') || q.includes('average')) {
+      if (agg.finish_avg) return `평균 기록: ${agg.finish_avg}초 (총 ${agg.count}건)`;
+    }
+
     let text = `조회 결과: ${agg.count}건`;
     if (agg.finish_avg) text += `\n평균 기록: ${agg.finish_avg}초`;
     if (agg.finish_min) text += `\n최고 기록: ${agg.finish_min}초`;
@@ -328,7 +342,7 @@ Reply with ONLY a number between 0.0 and 1.0.` },
 
     // If ANY decimal number is wrong, fall back to template (strict mode)
     if (wrongCount > 0) {
-      return this._templateFallback('', dbResult, aggregated);
+      return this._templateFallback(this._lastQuestion || '', dbResult, aggregated);
     }
     return answer;
   }
