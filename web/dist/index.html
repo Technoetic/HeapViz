@@ -7467,7 +7467,9 @@ RULES:
 9. For name searches, use ILIKE for fuzzy matching.
 10. "평균 기록" = AVG(finish), "최고 기록" = MIN(finish), "최저 기록" = MAX(finish).
 11. If the user inputs ONLY a player name (e.g. "여찬혁"), return that player's records: SELECT * FROM {records_table} WHERE name ILIKE '{romanized}%' AND status='OK' ORDER BY finish ASC LIMIT 20
-12. ALWAYS include a WHERE clause with the player name when a name is mentioned.`;
+12. ALWAYS include a WHERE clause with the player name when a name is mentioned.
+13. For COMPARE queries (vs, 비교, 누가): use OR to include BOTH players. Example: "김지수 vs 정승기" → SELECT * FROM skeleton_records WHERE (name ILIKE 'KIM Ji%' OR name ILIKE 'JUNG Seung%') AND status='OK' ORDER BY finish ASC LIMIT 40
+14. When two Korean names are mentioned, ALWAYS include BOTH in the WHERE clause with OR.`;
 
   constructor() {
     this.messages = [];
@@ -7790,9 +7792,11 @@ Reply with ONLY a number between 0.0 and 1.0.` },
     return answer;
   }
 
-  async _callLLM(messages, temperature = 0, retries = 2) {
+  async _callLLM(messages, temperature = 0, retries = 3) {
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 30000);
         const resp = await fetch(Chatbot.API_URL, {
           method: 'POST',
           headers: {
@@ -7805,9 +7809,11 @@ Reply with ONLY a number between 0.0 and 1.0.` },
             max_tokens: 1024,
             temperature,
           }),
+          signal: controller.signal,
         });
-        if (resp.status === 503 && attempt < retries) {
-          await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+        clearTimeout(timeout);
+        if ((resp.status === 503 || resp.status === 429) && attempt < retries) {
+          await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
           continue;
         }
         if (!resp.ok) throw new Error('LLM API error: ' + resp.status);
@@ -7815,7 +7821,7 @@ Reply with ONLY a number between 0.0 and 1.0.` },
         return data.choices[0].message.content.trim();
       } catch (e) {
         if (attempt >= retries) throw e;
-        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+        await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
       }
     }
   }
@@ -7998,7 +8004,28 @@ Reply with ONLY the URL path after /rest/v1/ (no base URL):`;
     // WHERE clauses
     const whereMatch = sql.match(/WHERE\s+([\s\S]+?)(?:\s+ORDER|\s+LIMIT|\s+GROUP|\s*$)/i);
     if (whereMatch) {
-      const conditions = whereMatch[1].split(/\s+AND\s+/i);
+      let whereStr = whereMatch[1];
+
+      // Handle OR groups: (col ILIKE 'A%' OR col ILIKE 'B%')
+      const orGroupMatch = whereStr.match(/\(([^)]+\s+OR\s+[^)]+)\)/i);
+      if (orGroupMatch) {
+        const orParts = orGroupMatch[1].split(/\s+OR\s+/i);
+        const orFilters = [];
+        for (const part of orParts) {
+          const m = part.trim().match(/(\w+)\s+ILIKE\s+'([^']+)'/i);
+          if (m) {
+            const val = m[2].replace(/%/g, '*');
+            orFilters.push(`${m[1]}.ilike.${val}`);
+          }
+        }
+        if (orFilters.length > 0) {
+          url += `&or=(${orFilters.join(',')})`;
+        }
+        // Remove the OR group from whereStr so AND parsing doesn't break
+        whereStr = whereStr.replace(orGroupMatch[0], '').replace(/^\s*AND\s+/i, '').replace(/\s+AND\s*$/i, '').trim();
+      }
+
+      const conditions = whereStr ? whereStr.split(/\s+AND\s+/i).filter(c => c.trim()) : [];
       for (const cond of conditions) {
         const eqMatch = cond.match(/(\w+)\s*=\s*'([^']+)'/i);
         if (eqMatch) {
@@ -8050,6 +8077,12 @@ Reply with ONLY the URL path after /rest/v1/ (no base URL):`;
         const notNullMatch = cond.match(/(\w+)\s+IS\s+NOT\s+NULL/i);
         if (notNullMatch) {
           url += `&${notNullMatch[1]}=not.is.null`;
+          continue;
+        }
+        // BETWEEN
+        const betweenMatch = cond.match(/(\w+)\s+BETWEEN\s+(\d+\.?\d*)\s+AND\s+(\d+\.?\d*)/i);
+        if (betweenMatch) {
+          url += `&${betweenMatch[1]}=gte.${betweenMatch[2]}&${betweenMatch[1]}=lte.${betweenMatch[3]}`;
           continue;
         }
       }
