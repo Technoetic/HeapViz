@@ -93,7 +93,7 @@
   border-color: #00e5ff;
   box-shadow: 0 0 6px rgba(0,229,255,0.2);
 }
-.dash-select-full { width: 100%; }
+.dash-select-full { width: 100%; font-family: var(--font); }
 
 /* 모드 토글 */
 .dash-mode-toggle { display: flex; gap: 0; margin-bottom: 0.5rem; border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.12); }
