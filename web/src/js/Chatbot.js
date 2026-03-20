@@ -972,15 +972,24 @@ RULES:
     this._lastQuestion = question;
     const tables = Chatbot.TABLES[this.sport];
 
+    // Compare shortcut FIRST: detect 2+ Korean names → direct DB fetch (no LLM needed)
+    const korNames = this._extractKoreanNames(question);
+    if (korNames.length >= 2 && this._isCompareQuestion(question)) {
+      // Run compare + head_to_head in parallel
+      const [compareResult, h2hResult] = await Promise.all([
+        this._compareQuery(korNames, tables),
+        this._execInsightFunc('head_to_head', question, `${Chatbot.SUPABASE_URL}/rest/v1/${tables.records}`,
+          { 'apikey': Chatbot.SUPABASE_KEY, 'Authorization': 'Bearer ' + Chatbot.SUPABASE_KEY },
+          this.sport === 'skeleton' ? [50, 60] : [45, 65], tables),
+      ]);
+      let text = compareResult.text;
+      if (h2hResult) text += '\n\n' + h2hResult.text;
+      return { text };
+    }
+
     // Insight shortcut: detect analytical questions → direct DB computation (no LLM SQL)
     const insight = await this._detectInsight(question, tables);
     if (insight) return insight;
-
-    // Compare shortcut: detect 2+ Korean names → direct DB fetch (no LLM needed)
-    const korNames = this._extractKoreanNames(question);
-    if (korNames.length >= 2 && this._isCompareQuestion(question)) {
-      return await this._compareQuery(korNames, tables);
-    }
 
     // Single Korean name shortcut → direct DB fetch
     if (korNames.length === 1 && question.trim().length <= 10) {
