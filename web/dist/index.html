@@ -7590,10 +7590,16 @@ RULES:
     return /[\uac00-\ud7a3]/.test(str);
   }
 
-  // Extract Korean names from question
+  // Extract Korean names from question (strip common particles)
   _extractKoreanNames(question) {
-    const matches = question.match(/[\uac00-\ud7a3]{2,4}/g) || [];
-    return [...new Set(matches)];
+    const matches = question.match(/[\uac00-\ud7a3]{2,5}/g) || [];
+    const particles = ['와', '과', '이랑', '하고', '이', '가', '은', '는', '을', '를', '의', '도', '에서', '에게', '한테'];
+    return [...new Set(matches.map(m => {
+      for (const p of particles) {
+        if (m.endsWith(p) && m.length > p.length + 1) return m.slice(0, -p.length);
+      }
+      return m;
+    }).filter(m => m.length >= 2))];
   }
 
   _isCompareQuestion(question) {
