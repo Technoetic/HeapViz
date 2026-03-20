@@ -195,6 +195,8 @@ RULES:
     }
     const rawSQL = this._pickConsensus(validSqls);
     const finalSQL = this._injectFilters(rawSQL, tables);
+    console.log('[Chatbot] Raw SQL:', rawSQL);
+    console.log('[Chatbot] Final SQL:', finalSQL);
 
     // ── Phase 2: DB execution ──
     let dbResult = await this._executeSQL(finalSQL, tables);
