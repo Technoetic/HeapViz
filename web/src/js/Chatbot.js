@@ -602,6 +602,18 @@ Reply with ONLY the URL path after /rest/v1/ (no base URL):`;
           url += `&${likeMatch[1]}=ilike.*${encodeURIComponent(likeMatch[2])}*`;
           continue;
         }
+        // ILIKE 'prefix%'
+        const ilikePrefixMatch = cond.match(/(\w+)\s+ILIKE\s+'([^']+)%'/i);
+        if (ilikePrefixMatch) {
+          url += `&${ilikePrefixMatch[1]}=ilike.${encodeURIComponent(ilikePrefixMatch[2])}*`;
+          continue;
+        }
+        // ILIKE '%text%'
+        const ilikeMatch = cond.match(/(\w+)\s+ILIKE\s+'%([^']+)%'/i);
+        if (ilikeMatch) {
+          url += `&${ilikeMatch[1]}=ilike.*${encodeURIComponent(ilikeMatch[2])}*`;
+          continue;
+        }
         const notNullMatch = cond.match(/(\w+)\s+IS\s+NOT\s+NULL/i);
         if (notNullMatch) {
           url += `&${notNullMatch[1]}=not.is.null`;
