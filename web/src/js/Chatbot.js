@@ -218,6 +218,31 @@ ABSOLUTE RULES:
     return /[\uac00-\ud7a3]/.test(str);
   }
 
+  // Fetch name_kr map from athletes table
+  async _getNameKrMap(tables) {
+    if (this._nameKrCache) return this._nameKrCache;
+    const h = { 'apikey': Chatbot.SUPABASE_KEY, 'Authorization': 'Bearer ' + Chatbot.SUPABASE_KEY };
+    try {
+      const resp = await fetch(`${Chatbot.SUPABASE_URL}/rest/v1/${tables.athletes}?select=name,name_kr&limit=200`, { headers: h });
+      const data = await resp.json();
+      this._nameKrCache = {};
+      for (const a of data) { if (a.name_kr) this._nameKrCache[a.name] = a.name_kr; }
+    } catch (e) { this._nameKrCache = {}; }
+    return this._nameKrCache;
+  }
+
+  _toKr(name, map) { return map[name] || name; }
+
+  // Korean particle helper: 이/가, 은/는, 을/를
+  static _particle(name, type) {
+    const last = name.charCodeAt(name.length - 1);
+    const hasBatchim = (last - 0xAC00) % 28 !== 0;
+    if (type === '이가') return hasBatchim ? '이' : '가';
+    if (type === '은는') return hasBatchim ? '은' : '는';
+    if (type === '을를') return hasBatchim ? '을' : '를';
+    return '';
+  }
+
   // Extract Korean names from question (strip common particles)
   _extractKoreanNames(question) {
     const matches = question.match(/[\uac00-\ud7a3]{2,5}/g) || [];
@@ -293,7 +318,7 @@ ABSOLUTE RULES:
 
     if (lines.length >= 2 && lines[0].best && lines[1].best) {
       const diff = (lines[1].best - lines[0].best).toFixed(2);
-      text += `\n→ ${lines[0].kr}이(가) ${diff}초 빠름`;
+      text += `\n→ ${lines[0].kr}${Chatbot._particle(lines[0].kr, '이가')} ${diff}초 빠름`;
     }
     return { text };
   }
@@ -418,25 +443,54 @@ RULES:
           const korNames = this._extractKoreanNames(question);
           const resolved = korNames.length > 0 ? await this._resolveKoreanName(korNames[0], tables) : null;
           const nameFilter = resolved ? `&name=eq.${encodeURIComponent(resolved.engName)}` : '';
-          const url = `${baseUrl}?select=finish,date,name&status=eq.OK&finish=gte.${range[0]}&finish=lte.${range[1]}${nameFilter}&order=date&limit=200`;
+          const url = `${baseUrl}?select=finish,date&is_normal=eq.true${nameFilter}&order=date&limit=500`;
           const data = (await (await fetch(url, { headers: h })).json());
           if (data.length < 5) return { text: '추이 분석을 위한 데이터가 부족합니다.' };
-          const half = Math.floor(data.length / 2);
-          const first = data.slice(0, half).map(r => parseFloat(r.finish));
-          const second = data.slice(half).map(r => parseFloat(r.finish));
-          const avgFirst = (first.reduce((a, b) => a + b, 0) / first.length).toFixed(2);
-          const avgSecond = (second.reduce((a, b) => a + b, 0) / second.length).toFixed(2);
-          const diff = (avgFirst - avgSecond).toFixed(2);
           const who = resolved ? resolved.krName : '전체';
-          let text = `📈 ${who} 기록 추이 분석 (${data.length}건)\n\n`;
-          text += `• 전반기 (${data[0].date}~${data[half-1].date}): 평균 ${avgFirst}초\n`;
-          text += `• 후반기 (${data[half].date}~${data[data.length-1].date}): 평균 ${avgSecond}초\n`;
-          text += diff > 0 ? `\n→ ${Math.abs(diff)}초 개선됨 (기록 향상 추세)` : `\n→ ${Math.abs(diff)}초 하락 (기록 저하 추세)`;
+
+          // Monthly breakdown
+          const months = {};
+          for (const r of data) {
+            const m = r.date.substring(0, 7);
+            if (!months[m]) months[m] = [];
+            months[m].push(parseFloat(r.finish));
+          }
+          const sorted = Object.entries(months).sort(([a], [b]) => a.localeCompare(b));
+
+          let text = `📈 ${who} 월별 기록 추이 (${data.length}건)\n\n`;
+          let prevAvg = null;
+          for (const [month, vals] of sorted) {
+            const avg = +(vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(2);
+            const best = +Math.min(...vals).toFixed(2);
+            const change = prevAvg ? (avg - prevAvg).toFixed(2) : null;
+            const arrow = change ? (change < 0 ? ` (${change}초 ↑)` : ` (+${change}초 ↓)`) : '';
+            text += `• ${month}: 평균 ${avg}초, 최고 ${best}초 (${vals.length}건)${arrow}\n`;
+            prevAvg = avg;
+          }
+
+          // Overall trend
+          const firstMonth = sorted[0];
+          const lastMonth = sorted[sorted.length - 1];
+          const firstAvg = +(firstMonth[1].reduce((a, b) => a + b, 0) / firstMonth[1].length).toFixed(2);
+          const lastAvg = +(lastMonth[1].reduce((a, b) => a + b, 0) / lastMonth[1].length).toFixed(2);
+          const totalDiff = (firstAvg - lastAvg).toFixed(2);
+          const p = Chatbot._particle(who, '은는');
+          text += totalDiff > 0
+            ? `\n→ ${who}${p} ${firstMonth[0]}~${lastMonth[0]} 동안 ${Math.abs(totalDiff)}초 개선`
+            : `\n→ ${who}${p} ${firstMonth[0]}~${lastMonth[0]} 동안 ${Math.abs(totalDiff)}초 하락`;
           return { text };
         }
         case 'consistency': {
-          const url = `${baseUrl}?select=finish,name,athlete_id&is_normal=eq.true&order=name&limit=2000`;
-          const data = (await (await fetch(url, { headers: h })).json());
+          // Fetch records + athlete name_kr
+          const [recResp, athResp] = await Promise.all([
+            fetch(`${baseUrl}?select=finish,name,athlete_id&is_normal=eq.true&order=name&limit=2000`, { headers: h }),
+            fetch(`${Chatbot.SUPABASE_URL}/rest/v1/${tables.athletes}?select=name,name_kr&limit=200`, { headers: h }),
+          ]);
+          const data = await recResp.json();
+          const athData = await athResp.json();
+          const nameKrMap = {};
+          for (const a of athData) { if (a.name_kr) nameKrMap[a.name] = a.name_kr; }
+
           const groups = {};
           for (const r of data) {
             const k = r.athlete_id || r.name;
@@ -448,12 +502,23 @@ RULES:
             .map(([aid, v]) => {
               const avg = v.vals.reduce((a, b) => a + b, 0) / v.vals.length;
               const std = Math.sqrt(v.vals.reduce((s, x) => s + (x - avg) ** 2, 0) / v.vals.length);
-              return { aid, name: v.name, avg: +avg.toFixed(2), std: +std.toFixed(2), n: v.vals.length };
-            })
-            .sort((a, b) => a.std - b.std);
+              const displayName = nameKrMap[v.name] || v.name;
+              return { aid, name: displayName, avg: +avg.toFixed(2), std: +std.toFixed(2), n: v.vals.length };
+            });
+
+          // Group by level: fast (<53), mid (53-55), slow (>55)
+          const fast = stats.filter(s => s.avg < 53).sort((a, b) => a.std - b.std);
+          const mid = stats.filter(s => s.avg >= 53 && s.avg < 55).sort((a, b) => a.std - b.std);
+
           let text = `📊 선수 일관성 순위 (편차 작을수록 안정적, 5건 이상)\n\n`;
-          for (const s of stats.slice(0, 10)) {
-            text += `${s.name}: 편차 ${s.std}초, 평균 ${s.avg}초 (${s.n}건)\n`;
+          if (fast.length > 0) {
+            text += `🥇 상위권 (평균 53초 미만):\n`;
+            for (const s of fast.slice(0, 5)) text += `  ${s.name}: 편차 ${s.std}초, 평균 ${s.avg}초 (${s.n}건)\n`;
+            text += '\n';
+          }
+          if (mid.length > 0) {
+            text += `🥈 중위권 (평균 53~55초):\n`;
+            for (const s of mid.slice(0, 5)) text += `  ${s.name}: 편차 ${s.std}초, 평균 ${s.avg}초 (${s.n}건)\n`;
           }
           return { text };
         }
@@ -497,6 +562,7 @@ RULES:
           return { text };
         }
         case 'start_vs_technique': {
+          const krMap = await this._getNameKrMap(tables);
           const url = `${baseUrl}?select=finish,start_time,name,athlete_id&is_normal=eq.true&order=name&limit=2000`;
           const data = (await (await fetch(url, { headers: h })).json());
           const groups = {};
@@ -511,8 +577,8 @@ RULES:
             .map(([, v]) => {
               const avgSt = v.starts.reduce((a, b) => a + b, 0) / v.starts.length;
               const avgFin = v.finishes.reduce((a, b) => a + b, 0) / v.finishes.length;
-              const technique = avgFin - avgSt; // lower = better driving
-              return { name: v.name, avgSt: +avgSt.toFixed(2), avgFin: +avgFin.toFixed(2), technique: +technique.toFixed(2), n: v.starts.length };
+              const technique = avgFin - avgSt;
+              return { name: this._toKr(v.name, krMap), avgSt: +avgSt.toFixed(2), avgFin: +avgFin.toFixed(2), technique: +technique.toFixed(2), n: v.starts.length };
             });
           const byTech = [...stats].sort((a, b) => a.technique - b.technique);
           const byStart = [...stats].sort((a, b) => a.avgSt - b.avgSt);
@@ -524,6 +590,7 @@ RULES:
           return { text };
         }
         case 'body_effect': {
+          const krMap = await this._getNameKrMap(tables);
           const athUrl = `${Chatbot.SUPABASE_URL}/rest/v1/${tables.athletes}?select=name,height_cm,weight_kg&height_cm=not.is.null&weight_kg=not.is.null`;
           const athletes = (await (await fetch(athUrl, { headers: h })).json());
           const athMap = {};
@@ -538,7 +605,7 @@ RULES:
           }
           const stats = Object.values(groups)
             .filter(v => v.vals.length >= 5)
-            .map(v => ({ name: v.name, h: v.height_cm, w: v.weight_kg, avg: +(v.vals.reduce((a, b) => a + b, 0) / v.vals.length).toFixed(2), n: v.vals.length }));
+            .map(v => ({ name: this._toKr(v.name, krMap), h: v.height_cm, w: v.weight_kg, avg: +(v.vals.reduce((a, b) => a + b, 0) / v.vals.length).toFixed(2), n: v.vals.length }));
           if (stats.length < 5) return { text: '신체 데이터가 있는 선수가 부족합니다.' };
           const heights = stats.map(s => s.h);
           const finishes = stats.map(s => s.avg);
@@ -1053,7 +1120,8 @@ RULES:
       let text = lines.map((l, i) => `${i + 1}. ${l.aid}: 최고 ${l.best}초, 평균 ${l.avg}초 (${l.count}건)`).join('\n');
       if (lines.length >= 2) {
         const diff = (lines[1].best - lines[0].best).toFixed(2);
-        text += `\n→ ${lines[0].aid}이(가) ${diff}초 빠름`;
+        const aidName = lines[0].aid;
+        text += `\n→ ${aidName}${Chatbot._particle(aidName, '이가')} ${diff}초 빠름`;
       }
       return text;
     }
