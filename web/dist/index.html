@@ -7651,9 +7651,15 @@ RULES:
       }
     }
 
-    // If all factchecks fail, use template fallback
+    // If question matches a known pattern, ALWAYS use template (zero hallucination)
+    const qLow = question.toLowerCase();
+    const forceTemplate = ['최고', '최소', '가장 빠른', '가장 느린', '평균', 'best', 'worst', 'average', 'fastest', 'slowest']
+      .some(k => qLow.includes(k));
+
     let finalAnswer;
-    if (bestScore < 0.8) {
+    if (forceTemplate) {
+      finalAnswer = this._templateFallback(question, dbResult, aggregated);
+    } else if (bestScore < 0.8) {
       finalAnswer = this._templateFallback(question, dbResult, aggregated);
     } else {
       finalAnswer = this._codeFactcheck(answers[bestIdx], dbResult, aggregated);
