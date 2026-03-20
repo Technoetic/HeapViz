@@ -7587,14 +7587,12 @@ RULES:
     this._lastQuestion = question;
     const tables = Chatbot.TABLES[this.sport];
 
-    // ── Phase 1: Intent + SQL generation (6 calls parallel) ──
+    // ── Phase 1: Intent + SQL generation (4 calls parallel) ──
     const [intentResult, ...sqlResults] = await Promise.all([
       this._classifyIntent(question),
       this._generateSQL(question, tables, 0.0),
-      this._generateSQL(question, tables, 0.1),
       this._generateSQL(question, tables, 0.3),
-      this._generateSQL(question, tables, 0.5),
-      this._generateSQL(question, tables, 0.7),
+      this._generateSQL(question, tables, 0.6),
     ]);
 
     if (intentResult === 'out_of_scope') {
@@ -7632,17 +7630,16 @@ RULES:
     // Client-side aggregation for common operations
     const aggregated = this._clientAggregate(dbResult);
 
-    // ── Phase 3: Answer generation (5 calls parallel) ──
-    const answerPromises = [0, 0.1, 0.2, 0.3, 0.4].map(temp =>
-      this._generateAnswer(question, dbResult, finalSQL, aggregated, temp)
-    );
-    const answers = await Promise.all(answerPromises);
+    // ── Phase 3: Answer generation (2 calls parallel) ──
+    const answers = await Promise.all([
+      this._generateAnswer(question, dbResult, finalSQL, aggregated, 0),
+      this._generateAnswer(question, dbResult, finalSQL, aggregated, 0.3),
+    ]);
 
-    // ── Phase 4: Factcheck (3 calls parallel) ──
-    const factcheckPromises = answers.map(ans =>
-      this._llmFactcheck(ans, dbResult, aggregated)
+    // ── Phase 4: Factcheck (2 calls parallel) ──
+    const factResults = await Promise.all(
+      answers.map(ans => this._llmFactcheck(ans, dbResult, aggregated))
     );
-    const factResults = await Promise.all(factcheckPromises);
 
     // Pick best answer: highest factcheck score
     let bestIdx = 0;
@@ -7657,7 +7654,7 @@ RULES:
 
     // If question matches a known pattern, ALWAYS use template (zero hallucination)
     const qLow = question.toLowerCase();
-    const forceTemplate = ['최고', '최소', '가장 빠른', '가장 느린', '평균', 'best', 'worst', 'average', 'fastest', 'slowest']
+    const forceTemplate = ['최고', '최소', '가장 빠른', '가장 느린', '평균', 'best', 'worst', 'average', 'fastest', 'slowest', 'vs', '누가 빨라', '비교']
       .some(k => qLow.includes(k));
 
     let finalAnswer;
@@ -7692,6 +7689,30 @@ RULES:
   _templateFallback(question, data, agg) {
     // Zero-LLM fallback: pure template
     const q = (question || '').toLowerCase();
+    // Compare pattern: group by athlete_id
+    if (q.includes('vs') || q.includes('비교') || q.includes('누가 빨라')) {
+      const groups = {};
+      for (const row of data) {
+        const aid = row.athlete_id || 'unknown';
+        if (!groups[aid]) groups[aid] = [];
+        groups[aid].push(parseFloat(row.finish));
+      }
+      const lines = [];
+      for (const [aid, finishes] of Object.entries(groups)) {
+        const valid = finishes.filter(f => !isNaN(f));
+        if (valid.length === 0) continue;
+        const avg = (valid.reduce((a, b) => a + b, 0) / valid.length).toFixed(2);
+        const best = Math.min(...valid).toFixed(2);
+        lines.push({ aid, avg: parseFloat(avg), best: parseFloat(best), count: valid.length });
+      }
+      lines.sort((a, b) => a.best - b.best);
+      let text = lines.map((l, i) => `${i + 1}. ${l.aid}: 최고 ${l.best}초, 평균 ${l.avg}초 (${l.count}건)`).join('\n');
+      if (lines.length >= 2) {
+        const diff = (lines[1].best - lines[0].best).toFixed(2);
+        text += `\n→ ${lines[0].aid}이(가) ${diff}초 빠름`;
+      }
+      return text;
+    }
     // Specific question patterns
     if (q.includes('최고') || q.includes('최소') || q.includes('가장 빠른') || q.includes('best')) {
       if (agg.finish_min) {
