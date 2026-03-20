@@ -7687,8 +7687,23 @@ RULES:
       return await this._insightStartImpact(baseUrl, h, range);
     }
 
-    // 2. 구간 분석 ("커브", "구간", "int")
-    if (q.includes('커브') || q.includes('구간') || (q.includes('int') && !q.includes('interview'))) {
+    // 2. 구간/커브 분석 ("커브", "구간", "int", "위험", "주의", "속도")
+    if (q.includes('커브') || q.includes('구간') || q.includes('위험') || q.includes('주의') || q.includes('속도') || (q.includes('int') && !q.includes('interview'))) {
+      // "가장 위험한 커브" → show highest difficulty
+      if (q.includes('위험') || q.includes('어려')) {
+        try {
+          const metaUrl = `${Chatbot.SUPABASE_URL}/rest/v1/track_metadata?select=*&order=curve_number`;
+          const metaResp = await fetch(metaUrl, { headers: h });
+          const meta = await metaResp.json();
+          const ranked = [...meta].sort((a, b) => a.radius_m - b.radius_m);
+          let text = '📊 커브 난이도 순위 (반경 작을수록 위험)\n\n';
+          for (const c of ranked.slice(0, 5)) {
+            text += `${c.curve_number}번 커브: 반경 ${c.radius_m}m, 뱅킹 ${c.banking_deg}도, 난이도 ${c.difficulty}\n`;
+            text += `  → ${c.coaching_tip}\n\n`;
+          }
+          return { text };
+        } catch (e) { /* fall through */ }
+      }
       return await this._insightSegment(q, baseUrl, h, range);
     }
 
@@ -7798,18 +7813,55 @@ RULES:
     const segNames = ['Start→Int.1', 'Int.1→Int.2', 'Int.2→Int.3', 'Int.3→Int.4', 'Int.4→Finish'];
     const curveInfo = ['커브 1~4', '커브 4~7', '커브 7~12', '커브 12~15', '커브 15~Finish'];
 
-    // Check if specific curve/int is mentioned
-    let targetSeg = -1;
-    for (let i = 0; i < segNames.length; i++) {
-      const num = q.match(/(\d+)/);
-      if (num) {
-        const cn = parseInt(num[1]);
-        if (cn <= 4 && i === 0) targetSeg = i;
-        else if (cn >= 4 && cn <= 7 && i === 1) targetSeg = i;
-        else if (cn >= 7 && cn <= 12 && i === 2) targetSeg = i;
-        else if (cn >= 12 && cn <= 15 && i === 3) targetSeg = i;
-        else if (cn >= 15 && i === 4) targetSeg = i;
+    // Check if specific curve number is mentioned
+    let targetCurve = null;
+    const curveNumMatch = q.match(/(\d+)/);
+    if (curveNumMatch) targetCurve = parseInt(curveNumMatch[1]);
+
+    // Fetch track metadata from DB
+    let trackMeta = [];
+    try {
+      const metaUrl = `${Chatbot.SUPABASE_URL}/rest/v1/track_metadata?select=*&order=curve_number`;
+      const metaResp = await fetch(metaUrl, { headers: h });
+      trackMeta = await metaResp.json();
+    } catch (e) { /* ignore */ }
+
+    // If specific curve asked, show detailed info
+    if (targetCurve && targetCurve >= 1 && targetCurve <= 16) {
+      const curve = trackMeta.find(c => c.curve_number === targetCurve);
+      if (curve) {
+        let text = `📊 커브 ${targetCurve} 상세 정보\n\n`;
+        text += `• 방향: ${curve.curve_type}\n`;
+        text += `• 반경: ${curve.radius_m}m\n`;
+        text += `• 뱅킹: ${curve.banking_deg}도\n`;
+        text += `• 고도: ${curve.elevation_m}m (낙차: ${curve.elevation_drop_m}m)\n`;
+        text += `• 출발점 거리: ${curve.distance_from_start_m}m\n`;
+        text += `• 구간: ${curve.segment}\n`;
+        text += `• 난이도: ${curve.difficulty}\n`;
+        text += `\n💡 코칭 팁: ${curve.coaching_tip}`;
+
+        // Add segment stats for the curve's segment
+        const segIdx = segNames.indexOf(curve.segment.replace(/-/g, '→'));
+        if (segIdx >= 0) {
+          const times = segments.map(s => s[segNames[segIdx]]).filter(v => !isNaN(v) && v > 0);
+          if (times.length > 0) {
+            const avg = (times.reduce((a, b) => a + b, 0) / times.length).toFixed(2);
+            const std = Math.sqrt(times.reduce((s, v) => s + (v - avg) ** 2, 0) / times.length).toFixed(2);
+            text += `\n\n📈 해당 구간(${curve.segment}) 통계:`;
+            text += `\n• 평균: ${avg}초, 편차: ${std}초`;
+          }
+        }
+        return { text };
       }
+    }
+
+    let targetSeg = -1;
+    if (targetCurve) {
+      if (targetCurve <= 4) targetSeg = 0;
+      else if (targetCurve <= 7) targetSeg = 1;
+      else if (targetCurve <= 12) targetSeg = 2;
+      else if (targetCurve <= 15) targetSeg = 3;
+      else targetSeg = 4;
     }
 
     let text = `📊 구간별 분석 (${valid.length}건)\n\n`;
