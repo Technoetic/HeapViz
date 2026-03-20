@@ -46,13 +46,22 @@ class DashboardController {
     const weatherRealtimeBtn = this.#el('dash-weather-mode-realtime');
     const weatherPastBtn = this.#el('dash-weather-mode-past');
     const weatherPastFields = this.#el('dash-weather-past-fields');
-    const dateEl = this.#el('dash-weather-date');
+    const dateOnlyEl = this.#el('dash-weather-date-only');
+    const hourEl = this.#el('dash-weather-hour');
+
+    const getDateTimeValue = () => {
+      const d = dateOnlyEl ? dateOnlyEl.value : '';
+      const h = hourEl ? hourEl.value : '';
+      if (!d) return '';
+      return h ? `${d}T${h}:00` : d;
+    };
 
     if (weatherRealtimeBtn) weatherRealtimeBtn.addEventListener('click', () => {
       weatherRealtimeBtn.classList.add('active');
       if (weatherPastBtn) weatherPastBtn.classList.remove('active');
       if (weatherPastFields) weatherPastFields.style.display = 'none';
-      if (dateEl) dateEl.value = '';
+      if (dateOnlyEl) dateOnlyEl.value = '';
+      if (hourEl) hourEl.value = '';
       const titleEl = this.#el('dash-weather-title');
       if (titleEl) titleEl.textContent = '실시간 환경 데이터';
       this.#fetchWeather();
@@ -60,9 +69,14 @@ class DashboardController {
     if (weatherPastBtn) weatherPastBtn.addEventListener('click', () => {
       weatherPastBtn.classList.add('active');
       if (weatherRealtimeBtn) weatherRealtimeBtn.classList.remove('active');
-      if (weatherPastFields) weatherPastFields.style.display = '';
+      if (weatherPastFields) weatherPastFields.style.display = 'flex';
     });
-    if (dateEl) dateEl.addEventListener('change', () => this.#fetchWeatherForDate(dateEl.value));
+    const onDateChange = () => {
+      const val = getDateTimeValue();
+      if (val) this.#fetchWeatherForDate(val);
+    };
+    if (dateOnlyEl) dateOnlyEl.addEventListener('change', onDateChange);
+    if (hourEl) hourEl.addEventListener('change', onDateChange);
 
     // 모드 토글
     const personalBtn = this.#el('dash-mode-personal');

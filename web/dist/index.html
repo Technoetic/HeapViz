@@ -110,8 +110,16 @@
             <button id="dash-weather-mode-realtime" class="dash-mode-btn active">실시간</button>
             <button id="dash-weather-mode-past" class="dash-mode-btn">과거 조회</button>
           </div>
-          <div id="dash-weather-past-fields" style="display:none;margin-bottom:6px">
-            <input id="dash-weather-date" type="datetime-local" step="3600" class="dash-select-full" style="font-size:0.85rem;padding:4px 8px">
+          <div id="dash-weather-past-fields" style="display:none;margin-bottom:6px;display:none;gap:6px">
+            <input id="dash-weather-date-only" type="date" class="dash-select-full" style="flex:1;font-size:0.85rem;padding:4px 8px">
+            <select id="dash-weather-hour" class="dash-select-full" style="flex:0 0 80px;font-size:0.85rem;padding:4px 8px">
+              <option value="">시간</option>
+              <option value="06">06시</option><option value="07">07시</option><option value="08">08시</option>
+              <option value="09">09시</option><option value="10">10시</option><option value="11">11시</option>
+              <option value="12">12시</option><option value="13">13시</option><option value="14">14시</option>
+              <option value="15">15시</option><option value="16">16시</option><option value="17">17시</option>
+              <option value="18">18시</option><option value="19">19시</option><option value="20">20시</option>
+            </select>
           </div>
           <div class="dash-input-row">
             <label style="flex:1">기온 (°C)<input id="dash-airtemp" type="number" step="0.1" readonly placeholder="로딩 중..."></label>
@@ -4588,13 +4596,22 @@ class TableRenderer {
     const weatherRealtimeBtn = this.#el('dash-weather-mode-realtime');
     const weatherPastBtn = this.#el('dash-weather-mode-past');
     const weatherPastFields = this.#el('dash-weather-past-fields');
-    const dateEl = this.#el('dash-weather-date');
+    const dateOnlyEl = this.#el('dash-weather-date-only');
+    const hourEl = this.#el('dash-weather-hour');
+
+    const getDateTimeValue = () => {
+      const d = dateOnlyEl ? dateOnlyEl.value : '';
+      const h = hourEl ? hourEl.value : '';
+      if (!d) return '';
+      return h ? `${d}T${h}:00` : d;
+    };
 
     if (weatherRealtimeBtn) weatherRealtimeBtn.addEventListener('click', () => {
       weatherRealtimeBtn.classList.add('active');
       if (weatherPastBtn) weatherPastBtn.classList.remove('active');
       if (weatherPastFields) weatherPastFields.style.display = 'none';
-      if (dateEl) dateEl.value = '';
+      if (dateOnlyEl) dateOnlyEl.value = '';
+      if (hourEl) hourEl.value = '';
       const titleEl = this.#el('dash-weather-title');
       if (titleEl) titleEl.textContent = '실시간 환경 데이터';
       this.#fetchWeather();
@@ -4602,9 +4619,14 @@ class TableRenderer {
     if (weatherPastBtn) weatherPastBtn.addEventListener('click', () => {
       weatherPastBtn.classList.add('active');
       if (weatherRealtimeBtn) weatherRealtimeBtn.classList.remove('active');
-      if (weatherPastFields) weatherPastFields.style.display = '';
+      if (weatherPastFields) weatherPastFields.style.display = 'flex';
     });
-    if (dateEl) dateEl.addEventListener('change', () => this.#fetchWeatherForDate(dateEl.value));
+    const onDateChange = () => {
+      const val = getDateTimeValue();
+      if (val) this.#fetchWeatherForDate(val);
+    };
+    if (dateOnlyEl) dateOnlyEl.addEventListener('change', onDateChange);
+    if (hourEl) hourEl.addEventListener('change', onDateChange);
 
     // 모드 토글
     const personalBtn = this.#el('dash-mode-personal');
