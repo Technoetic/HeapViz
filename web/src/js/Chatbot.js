@@ -172,9 +172,110 @@ RULES:
   // Total: 14 LLM calls, 4 sequential phases, ~3-4 seconds
   //
 
+  // Korean name detection helper
+  static _isKorean(str) {
+    return /[\uac00-\ud7a3]/.test(str);
+  }
+
+  // Extract Korean names from question
+  _extractKoreanNames(question) {
+    const matches = question.match(/[\uac00-\ud7a3]{2,4}/g) || [];
+    return [...new Set(matches)];
+  }
+
+  _isCompareQuestion(question) {
+    const q = question.toLowerCase();
+    return q.includes('vs') || q.includes('비교') || q.includes('누가') || q.includes('와 ') || q.includes('과 ');
+  }
+
+  async _resolveKoreanName(name, tables) {
+    // For skeleton: search name_kr in athletes table, get english name
+    // For luge/bobsled: name is already Korean
+    const h = { 'apikey': Chatbot.SUPABASE_KEY, 'Authorization': 'Bearer ' + Chatbot.SUPABASE_KEY };
+    if (this.sport === 'skeleton') {
+      const url = `${Chatbot.SUPABASE_URL}/rest/v1/${tables.athletes}?select=name,name_kr,athlete_id&name_kr=eq.${encodeURIComponent(name)}&limit=1`;
+      const resp = await fetch(url, { headers: h });
+      const rows = await resp.json();
+      if (rows.length > 0) return { engName: rows[0].name, krName: name, aid: rows[0].athlete_id };
+      // Fallback: search in records name directly (for Korean-named skeleton athletes)
+      const url2 = `${Chatbot.SUPABASE_URL}/rest/v1/${tables.records}?select=name,athlete_id&name=eq.${encodeURIComponent(name)}&limit=1`;
+      const resp2 = await fetch(url2, { headers: h });
+      const rows2 = await resp2.json();
+      if (rows2.length > 0) return { engName: rows2[0].name, krName: name, aid: rows2[0].athlete_id };
+    } else {
+      // Luge/bobsled: name is Korean directly
+      const url = `${Chatbot.SUPABASE_URL}/rest/v1/${tables.records}?select=name,athlete_id&name=eq.${encodeURIComponent(name)}&limit=1`;
+      const resp = await fetch(url, { headers: h });
+      const rows = await resp.json();
+      if (rows.length > 0) return { engName: rows[0].name, krName: name, aid: rows[0].athlete_id };
+    }
+    return null;
+  }
+
+  async _compareQuery(korNames, tables) {
+    const resolved = await Promise.all(korNames.map(n => this._resolveKoreanName(n, tables)));
+    const valid = resolved.filter(r => r != null);
+    if (valid.length < 2) return { text: `비교할 선수를 찾을 수 없습니다. (인식: ${korNames.join(', ')})` };
+
+    const range = this.sport === 'skeleton' ? [50, 60] : [45, 65];
+    const h = { 'apikey': Chatbot.SUPABASE_KEY, 'Authorization': 'Bearer ' + Chatbot.SUPABASE_KEY };
+
+    const fetches = valid.map(({ engName }) => {
+      const url = `${Chatbot.SUPABASE_URL}/rest/v1/${tables.records}?select=finish,athlete_id&name=eq.${encodeURIComponent(engName)}&status=eq.OK&finish=gte.${range[0]}&finish=lte.${range[1]}&order=finish&limit=50`;
+      return fetch(url, { headers: h }).then(r => r.json());
+    });
+    const results = await Promise.all(fetches);
+
+    const lines = [];
+    for (let i = 0; i < valid.length; i++) {
+      const data = results[i];
+      const finishes = data.map(r => parseFloat(r.finish)).filter(f => !isNaN(f));
+      if (finishes.length === 0) {
+        lines.push({ kr: valid[i].krName, aid: valid[i].aid, best: null, avg: null, count: 0 });
+        continue;
+      }
+      const avg = +(finishes.reduce((a, b) => a + b, 0) / finishes.length).toFixed(2);
+      const best = +Math.min(...finishes).toFixed(2);
+      lines.push({ kr: valid[i].krName, aid: valid[i].aid, best, avg, count: finishes.length });
+    }
+    lines.sort((a, b) => (a.best || 999) - (b.best || 999));
+
+    let text = lines.map((l, i) =>
+      l.best ? `${i + 1}. ${l.kr}: 최고 ${l.best}초, 평균 ${l.avg}초 (${l.count}건)` : `${i + 1}. ${l.kr}: 데이터 없음`
+    ).join('\n');
+
+    if (lines.length >= 2 && lines[0].best && lines[1].best) {
+      const diff = (lines[1].best - lines[0].best).toFixed(2);
+      text += `\n→ ${lines[0].kr}이(가) ${diff}초 빠름`;
+    }
+    return { text };
+  }
+
   async _pipeline(question) {
     this._lastQuestion = question;
     const tables = Chatbot.TABLES[this.sport];
+
+    // Compare shortcut: detect 2+ Korean names → direct DB fetch (no LLM needed)
+    const korNames = this._extractKoreanNames(question);
+    if (korNames.length >= 2 && this._isCompareQuestion(question)) {
+      return await this._compareQuery(korNames, tables);
+    }
+
+    // Single Korean name shortcut → direct DB fetch
+    if (korNames.length === 1 && question.trim().length <= 10) {
+      const resolved = await this._resolveKoreanName(korNames[0], tables);
+      if (resolved) {
+        const range = this.sport === 'skeleton' ? [50, 60] : [45, 65];
+        const h = { 'apikey': Chatbot.SUPABASE_KEY, 'Authorization': 'Bearer ' + Chatbot.SUPABASE_KEY };
+        const url = `${Chatbot.SUPABASE_URL}/rest/v1/${tables.records}?select=finish,start_time,date&name=eq.${encodeURIComponent(resolved.engName)}&status=eq.OK&finish=gte.${range[0]}&finish=lte.${range[1]}&order=finish&limit=50`;
+        const resp = await fetch(url, { headers: h });
+        const data = await resp.json();
+        if (data.length > 0) {
+          const agg = this._clientAggregate(data);
+          return { text: this._templateFallback(question, data, agg) };
+        }
+      }
+    }
 
     // ── Phase 1: Intent + SQL generation (4 calls parallel) ──
     const [intentResult, ...sqlResults] = await Promise.all([
