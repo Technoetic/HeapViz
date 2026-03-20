@@ -162,6 +162,7 @@
   position: relative;
   border-radius: 8px;
   overflow: hidden;
+  background: linear-gradient(to bottom, #e8f0fe, #f5f7fa);
 }
 .dash-speed-legend {
   display: flex;
