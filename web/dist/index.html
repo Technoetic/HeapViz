@@ -7448,6 +7448,13 @@ TABLES:
 - luge_athletes: same as athletes
 - bobsled_athletes: same as athletes + role
 
+IMPORTANT - NAME FORMAT:
+- Names are stored in UPPERCASE ENGLISH: "YEO Chanhyuk", "KIM Jisoo", "HONG Sujung", "JUNG Seunggi"
+- Korean name mapping: 여찬혁=YEO Chanhyuk, 김지수=KIM Jisoo, 홍수정=HONG Sujung, 정승기=JUNG Seunggi, 신연수=SHIN Yeonsu, 정예은=CHUNG Yeeun, 곽은우=KWACK Eunwoo, 안재웅=AN Jaewoong, 김민지=KIM Minji, 김예림=KIM Yerim, 정장환=JUNG Janghwan, 송영민=SONG Youngmin, 이승훈=LEE Seunghoon, 박예운=PARK Yewoon
+- For Korean names, use ILIKE with the romanized surname: e.g. WHERE name ILIKE 'YEO%' for 여찬혁
+- For luge: 유지훈=YU Jihun, 박지예=PARK Jiye, 오정임=OH Jungim, 김보근=KIM Bogeun
+- For bobsled: 김진수=KIM Jinsu, 석영진=SEOK Youngjin, 김유란=KIM Yuran
+
 RULES:
 1. ONLY generate SELECT queries. Never INSERT/UPDATE/DELETE.
 2. Use only the table and column names listed above.
@@ -7456,7 +7463,8 @@ RULES:
 5. start_time is in seconds.
 6. Return ONLY the SQL query, nothing else.
 7. Use Supabase PostgREST syntax is NOT needed — use standard SQL.
-8. Limit results to 50 rows max.`;
+8. Limit results to 50 rows max.
+9. For name searches, use ILIKE for fuzzy matching.`;
 
   constructor() {
     this.messages = [];
@@ -7607,23 +7615,34 @@ RULES:
     return { text: checked, table: tableHtml };
   }
 
-  async _callLLM(messages, temperature = 0) {
-    const resp = await fetch(Chatbot.API_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + Chatbot.API_KEY,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: Chatbot.MODEL,
-        messages,
-        max_tokens: 1024,
-        temperature,
-      }),
-    });
-    if (!resp.ok) throw new Error('LLM API error: ' + resp.status);
-    const data = await resp.json();
-    return data.choices[0].message.content.trim();
+  async _callLLM(messages, temperature = 0, retries = 2) {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const resp = await fetch(Chatbot.API_URL, {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + Chatbot.API_KEY,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: Chatbot.MODEL,
+            messages,
+            max_tokens: 1024,
+            temperature,
+          }),
+        });
+        if (resp.status === 503 && attempt < retries) {
+          await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+          continue;
+        }
+        if (!resp.ok) throw new Error('LLM API error: ' + resp.status);
+        const data = await resp.json();
+        return data.choices[0].message.content.trim();
+      } catch (e) {
+        if (attempt >= retries) throw e;
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+      }
+    }
   }
 
   async _classifyIntent(question) {
