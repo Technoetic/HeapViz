@@ -7607,9 +7607,21 @@ RULES:
     const finalSQL = this._injectFilters(rawSQL, tables);
 
     // ── Phase 2: DB execution ──
-    const dbResult = await this._executeSQL(finalSQL, tables);
+    let dbResult = await this._executeSQL(finalSQL, tables);
     if (!dbResult || dbResult.length === 0) {
       return { text: '해당 조건에 맞는 데이터가 없습니다.' };
+    }
+
+    // Post-filter: enforce finish range client-side (safety net)
+    const range = this.sport === 'skeleton' ? [49, 60] : [45, 65];
+    if (dbResult[0] && 'finish' in dbResult[0]) {
+      dbResult = dbResult.filter(r => {
+        const f = parseFloat(r.finish);
+        return isNaN(f) || (f >= range[0] && f <= range[1]);
+      });
+      if (dbResult.length === 0) {
+        return { text: '해당 조건에 맞는 정상 기록이 없습니다.' };
+      }
     }
 
     // Client-side aggregation for common operations
