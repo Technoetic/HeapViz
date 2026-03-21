@@ -20,6 +20,10 @@
 
 <br/>
 
+<img src="docs/screenshots/design-intro.gif" width="90%" alt="트랙 커브 애니메이션 + 구간 기록"/>
+
+<br/>
+
 <img src="docs/screenshots/intro.gif" width="90%" alt="대시보드 - 트랙맵 커브 인터랙션"/>
 
 </div>
@@ -327,6 +331,10 @@ graph LR
 > [!IMPORTANT]
 > 선행연구에서 **환경 변수(기온, 습도, 기압, 빙질)와 스타트 기록을 통합한 다변량 예측 모델**은 거의 없었습니다.
 > 본 프로젝트는 이 공백을 XGBoost + Polynomial MLR 앙상블로 채웁니다.
+
+<div align="center">
+<img src="docs/screenshots/design-mid.gif" width="90%" alt="데이터 파이프라인 - 환경 데이터 + ML 앙상블 예측"/>
+</div>
 
 > 상세: [PREDICTION_MODEL.md](PREDICTION_MODEL.md) | 선행연구: [LITERATURE_AND_PROPOSAL.md](LITERATURE_AND_PROPOSAL.md)
 
@@ -683,6 +691,10 @@ graph TB
 ---
 
 <div align="center">
+
+<img src="docs/screenshots/design-footer.gif" width="90%" alt="기술 스택 조립 애니메이션"/>
+
+<br/>
 
 **슬라이딩 스포츠 커뮤니티를 위해 제작되었습니다**
 
