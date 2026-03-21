@@ -20,7 +20,7 @@
 
 <br/>
 
-<img src="docs/screenshots/dashboard.png" width="90%" alt="대시보드 - 트랙맵 시각화 + AI 예측"/>
+<img src="docs/screenshots/demo.gif" width="90%" alt="플랫폼 데모 - 대시보드, 트랙맵, AI 챗봇, 데이터 탐색"/>
 
 </div>
 
