@@ -49,20 +49,20 @@
 
 ```mermaid
 graph LR
-    subgraph 기존 문제
-        P1[경기 데이터가<br/>PDF/엑셀로 산재]
-        P2[구간별 기록 비교가<br/>수동 작업]
-        P3[기상 조건의 영향<br/>정량화 불가]
-        P4[코칭 전략이<br/>경험에만 의존]
-        P5[환경+스타트 통합<br/>예측 모델 부재]
+    subgraph problems["기존 문제"]
+        P1["경기 데이터가\nPDF/엑셀로 산재"]
+        P2["구간별 기록 비교가\n수동 작업"]
+        P3["기상 조건의 영향\n정량화 불가"]
+        P4["코칭 전략이\n경험에만 의존"]
+        P5["환경+스타트 통합\n예측 모델 부재"]
     end
 
-    subgraph 해결책
-        S1[Supabase DB 통합<br/>+ REST API]
-        S2[인터랙티브 테이블<br/>+ 차트 비교]
-        S3[기온/습도/기압/빙질<br/>ML 모델 통합]
-        S4[AI 챗봇 기반<br/>데이터 코칭]
-        S5[XGBoost + Poly MLR<br/>앙상블 예측]
+    subgraph solutions["해결책"]
+        S1["Supabase DB 통합\n+ REST API"]
+        S2["인터랙티브 테이블\n+ 차트 비교"]
+        S3["기온/습도/기압/빙질\nML 모델 통합"]
+        S4["AI 챗봇 기반\n데이터 코칭"]
+        S5["XGBoost + Poly MLR\n앙상블 예측"]
     end
 
     P1 --> S1
@@ -101,30 +101,30 @@ An **AI chatbot** powered by LLM function routing enables natural language queri
 
 ```mermaid
 graph TB
-    subgraph 입력 패널
-        A1[선수 프로필 입력]
-        A2[실시간 기상 데이터<br/>KMA API]
-        A3[공기밀도 / 이슬점<br/>자동 계산]
-        A4[빙질 온도 입력]
-        A5[이상치 필터링 토글]
+    subgraph inputPanel["입력 패널"]
+        A1["선수 프로필 입력"]
+        A2["실시간 기상 데이터\nKMA API"]
+        A3["공기밀도 / 이슬점\n자동 계산"]
+        A4["빙질 온도 입력"]
+        A5["이상치 필터링 토글"]
     end
 
-    subgraph 트랙맵 시각화
-        B1[평창 트랙 SVG 조감도]
-        B2[Turn 1~16 커브 라벨링]
-        B3[구간별 속도 히트맵]
-        B4[드래그 줌 컨트롤]
+    subgraph trackViz["트랙맵 시각화"]
+        B1["평창 트랙 SVG 조감도"]
+        B2["Turn 1~16 커브 라벨링"]
+        B3["구간별 속도 히트맵"]
+        B4["드래그 줌 컨트롤"]
     end
 
-    subgraph AI 예측 + 코칭
-        C1[XGBoost / MLR 예측]
-        C2[부트스트랩 신뢰구간]
-        C3[구간별 코칭 전략]
-        C4[모델 비교 차트]
+    subgraph aiPredict["AI 예측 + 코칭"]
+        C1["XGBoost / MLR 예측"]
+        C2["부트스트랩 신뢰구간"]
+        C3["구간별 코칭 전략"]
+        C4["모델 비교 차트"]
     end
 
-    입력 패널 --> 트랙맵 시각화
-    트랙맵 시각화 --> AI 예측 + 코칭
+    inputPanel --> trackViz
+    trackViz --> aiPredict
 ```
 
 ### 2. 트랙맵 분석
@@ -145,23 +145,23 @@ graph TB
 
 ```mermaid
 sequenceDiagram
-    participant 사용자
-    participant 챗봇 UI
-    participant LLM 라우터
-    participant 인사이트 엔진
-    participant Supabase DB
-    participant 검증기
+    participant User as 사용자
+    participant UI as 챗봇 UI
+    participant Router as LLM 라우터
+    participant Engine as 인사이트 엔진
+    participant DB as Supabase DB
+    participant Verify as 검증기
 
-    사용자->>챗봇 UI: 자연어 질문 입력
-    챗봇 UI->>LLM 라우터: 질문 분석 요청
-    LLM 라우터->>LLM 라우터: 18종 함수 중 최적 선택
-    LLM 라우터->>인사이트 엔진: 선택된 함수 호출
-    인사이트 엔진->>Supabase DB: SQL 쿼리 실행
-    Supabase DB-->>인사이트 엔진: 쿼리 결과
-    인사이트 엔진-->>검증기: 응답 + 원본 데이터
-    검증기->>검증기: 모든 수치 DB 원본과 대조
-    검증기-->>챗봇 UI: 검증된 자연어 응답
-    챗봇 UI-->>사용자: 환각 없는 답변 표시
+    User->>UI: 자연어 질문 입력
+    UI->>Router: 질문 분석 요청
+    Router->>Router: 18종 함수 중 최적 선택
+    Router->>Engine: 선택된 함수 호출
+    Engine->>DB: SQL 쿼리 실행
+    DB-->>Engine: 쿼리 결과
+    Engine-->>Verify: 응답 + 원본 데이터
+    Verify->>Verify: 모든 수치 DB 원본과 대조
+    Verify-->>UI: 검증된 자연어 응답
+    UI-->>User: 환각 없는 답변 표시
 ```
 
 - **LLM 기반 함수 라우팅** (18종 인사이트 함수)
@@ -183,7 +183,7 @@ sequenceDiagram
 
 ```mermaid
 graph TB
-    subgraph 클라이언트["클라이언트 (Browser)"]
+    subgraph client["클라이언트 - Browser"]
         DC[DashboardController]
         TM[TrackMapRenderer]
         EC[Explore / Compare]
@@ -191,30 +191,30 @@ graph TB
         DS[DataStore<br/>클라이언트 캐시]
         PM[PredictionModel<br/>JS 클라이언트 사이드 추론]
 
-        subgraph ML 모델
-            XGB[XGBoost<br/>JSON]
-            MLR[Poly MLR<br/>JSON]
-            ENS[Ensemble<br/>+ K-Fold + Bootstrap CI]
+        subgraph mlModels["ML 모델"]
+            XGB["XGBoost\nJSON"]
+            MLR2["Poly MLR\nJSON"]
+            ENS["Ensemble\n+ K-Fold + Bootstrap CI"]
         end
 
         DC & TM & EC & CB --> DS
         DS --> PM
-        PM --> XGB & MLR & ENS
+        PM --> XGB & MLR2 & ENS
     end
 
-    subgraph 서버["Nginx (Railway)"]
+    subgraph server["Nginx - Railway"]
         KMA["/api/kma/* → 기상청 API"]
         LLM["/api/llm/* → LLM API"]
         REC["/api/records → FastAPI"]
     end
 
-    subgraph 백엔드["FastAPI 백엔드"]
+    subgraph backend["FastAPI 백엔드"]
         API["/api/records"]
         SVC["Supabase DataService"]
         API --> SVC
     end
 
-    subgraph DB["Supabase (PostgreSQL)"]
+    subgraph database["Supabase - PostgreSQL"]
         T1[(skeleton_records)]
         T2[(luge_records)]
         T3[(bobsled_records)]
@@ -222,14 +222,14 @@ graph TB
         T5[(track_metadata)]
     end
 
-    클라이언트 -->|HTTPS| 서버
-    서버 --> 백엔드
-    백엔드 --> DB
+    client -->|HTTPS| server
+    server --> backend
+    backend --> database
 
-    style 클라이언트 fill:#1a1a2e,color:#fff
-    style 서버 fill:#16213e,color:#fff
-    style 백엔드 fill:#0f3460,color:#fff
-    style DB fill:#533483,color:#fff
+    style client fill:#1a1a2e,color:#fff
+    style server fill:#16213e,color:#fff
+    style backend fill:#0f3460,color:#fff
+    style database fill:#533483,color:#fff
 ```
 
 ---
@@ -238,43 +238,43 @@ graph TB
 
 ```mermaid
 graph LR
-    subgraph 프론트엔드
-        JS[Vanilla JS<br/>ES2024]
-        CHART[Chart.js<br/>+ Plugins]
-        D3[D3.js]
-        TAB[Tabulator.js]
-        TIPPY[Tippy.js]
-        LUXON[Luxon]
-        PDF[html2canvas<br/>+ jsPDF]
-        PAPA[PapaParse]
-        SS[simple-statistics]
+    subgraph frontend["프론트엔드"]
+        JS["Vanilla JS\nES2024"]
+        CHART["Chart.js\n+ Plugins"]
+        D3["D3.js"]
+        TAB["Tabulator.js"]
+        TIPPY["Tippy.js"]
+        LUXON["Luxon"]
+        PDF["html2canvas\n+ jsPDF"]
+        PAPA["PapaParse"]
+        SS["simple-statistics"]
     end
 
-    subgraph 백엔드_스택["백엔드"]
-        FAPI[FastAPI]
-        UVICORN[Uvicorn]
-        HTTPX[httpx]
-        SUPA[Supabase<br/>PostgreSQL]
+    subgraph backendStack["백엔드"]
+        FAPI["FastAPI"]
+        UVICORN["Uvicorn"]
+        HTTPX["httpx"]
+        SUPA["Supabase\nPostgreSQL"]
     end
 
-    subgraph ML["ML / 예측"]
-        XG[XGBoost]
-        SK[scikit-learn]
-        NP[NumPy / Pandas]
+    subgraph mlStack["ML / 예측"]
+        XG["XGBoost"]
+        SK["scikit-learn"]
+        NP["NumPy / Pandas"]
     end
 
-    subgraph 인프라["인프라 / DevOps"]
-        RAIL[Railway]
-        NGX[Nginx]
-        DOCK[Docker]
-        PW[Playwright]
-        AXE[axe-core]
+    subgraph infra["인프라 / DevOps"]
+        RAIL["Railway"]
+        NGX["Nginx"]
+        DOCK["Docker"]
+        PW["Playwright"]
+        AXE["axe-core"]
     end
 
-    style 프론트엔드 fill:#264653,color:#fff
-    style 백엔드_스택 fill:#2a9d8f,color:#fff
-    style ML fill:#e9c46a,color:#000
-    style 인프라 fill:#e76f51,color:#fff
+    style frontend fill:#264653,color:#fff
+    style backendStack fill:#2a9d8f,color:#fff
+    style mlStack fill:#e9c46a,color:#000
+    style infra fill:#e76f51,color:#fff
 ```
 
 | 분류 | 기술 | 용도 |
@@ -311,20 +311,20 @@ graph LR
 
 ```mermaid
 graph TD
-    RAW[(원시 데이터<br/>Supabase)] --> FILTER[이상치 필터링<br/>Skidding / DNF /<br/>비정상 구간시간]
-    FILTER --> GENDER{성별 분리}
+    RAW[("원시 데이터\nSupabase")] --> FILTER["이상치 필터링\nSkidding / DNF /\n비정상 구간시간"]
+    FILTER --> GENDER{"성별 분리"}
 
-    GENDER -->|남자| M_XGB[XGBoost V2<br/>남자 모델]
-    GENDER -->|남자| M_MLR[Poly Ridge MLR<br/>3차, 남자 모델]
-    GENDER -->|여자| F_XGB[XGBoost V2<br/>여자 모델]
-    GENDER -->|여자| F_MLR[Poly Ridge MLR<br/>3차, 여자 모델]
+    GENDER -->|남자| M_XGB["XGBoost V2\n남자 모델"]
+    GENDER -->|남자| M_MLR["Poly Ridge MLR\n3차, 남자 모델"]
+    GENDER -->|여자| F_XGB["XGBoost V2\n여자 모델"]
+    GENDER -->|여자| F_MLR["Poly Ridge MLR\n3차, 여자 모델"]
 
-    M_XGB & M_MLR --> M_ENS[남자 앙상블<br/>가중 평균]
-    F_XGB & F_MLR --> F_ENS[여자 앙상블<br/>가중 평균]
+    M_XGB & M_MLR --> M_ENS["남자 앙상블\n가중 평균"]
+    F_XGB & F_MLR --> F_ENS["여자 앙상블\n가중 평균"]
 
-    M_ENS & F_ENS --> CV[K-Fold 교차 검증<br/>k=5]
-    CV --> CI[부트스트랩 신뢰구간<br/>95%]
-    CI --> RESULT[최종 예측 결과<br/>피니시 타임 + CI]
+    M_ENS & F_ENS --> CV["K-Fold 교차 검증\nk=5"]
+    CV --> CI["부트스트랩 신뢰구간\n95%"]
+    CI --> RESULT["최종 예측 결과\n피니시 타임 + CI"]
 
     style RAW fill:#4c6ef5,color:#fff
     style FILTER fill:#fa5252,color:#fff
@@ -338,22 +338,22 @@ graph TD
 
 ```mermaid
 graph LR
-    subgraph 경기 데이터
-        ST[start_time<br/>출발 기록]
-        I1[int1<br/>4번 커브]
-        I2[int2<br/>7번 커브]
-        I3[int3<br/>12번 커브]
-        I4[int4<br/>15번 커브]
+    subgraph raceData["경기 데이터"]
+        ST["start_time\n출발 기록"]
+        I1["int1\n4번 커브"]
+        I2["int2\n7번 커브"]
+        I3["int3\n12번 커브"]
+        I4["int4\n15번 커브"]
     end
 
-    subgraph 환경 변수
-        AD[air_density<br/>공기밀도]
-        IT[ice_temp<br/>빙질 온도]
-        DP[dewpoint<br/>이슬점]
+    subgraph envVars["환경 변수"]
+        AD["air_density\n공기밀도"]
+        IT["ice_temp\n빙질 온도"]
+        DP["dewpoint\n이슬점"]
     end
 
-    경기 데이터 & 환경 변수 --> MODEL[예측 모델]
-    MODEL --> FT[finish_time<br/>피니시 타임 예측]
+    raceData & envVars --> MODEL["예측 모델"]
+    MODEL --> FT["finish_time\n피니시 타임 예측"]
 
     style FT fill:#7950f2,color:#fff
 ```
@@ -383,15 +383,15 @@ graph LR
 
 ```mermaid
 flowchart LR
-    A[IBSF 경기 결과<br/>공식 데이터] -->|크롤링/수동 입력| B[(Supabase<br/>PostgreSQL)]
-    W[기상청 KMA API<br/>실시간 기상] -->|Nginx 프록시| C[FastAPI<br/>백엔드]
+    A["IBSF 경기 결과\n공식 데이터"] -->|크롤링/수동 입력| B[("Supabase\nPostgreSQL")]
+    W["기상청 KMA API\n실시간 기상"] -->|Nginx 프록시| C["FastAPI\n백엔드"]
     B --> C
-    C -->|REST API| D[DataStore<br/>클라이언트 캐시]
-    D --> E[대시보드]
-    D --> F[트랙맵]
-    D --> G[탐색/비교]
-    D --> H[AI 챗봇]
-    D --> I[예측 모델<br/>XGB + MLR]
+    C -->|REST API| D["DataStore\n클라이언트 캐시"]
+    D --> E["대시보드"]
+    D --> F["트랙맵"]
+    D --> G["탐색/비교"]
+    D --> H["AI 챗봇"]
+    D --> I["예측 모델\nXGB + MLR"]
     I -->|예측 결과| E
 
     style A fill:#339af0,color:#fff
@@ -404,31 +404,46 @@ flowchart LR
 
 ```mermaid
 stateDiagram-v2
-    [*] --> 대시보드
+    [*] --> Dashboard
 
-    대시보드 --> 트랙맵: 탭 클릭
-    대시보드 --> 탐색: 탭 클릭
-    대시보드 --> 비교: 탭 클릭
+    Dashboard --> TrackMap : 탭 클릭
+    Dashboard --> Explore : 탭 클릭
+    Dashboard --> Compare : 탭 클릭
 
-    대시보드 --> 예측_입력: 선수 프로필 + 환경 데이터 입력
-    예측_입력 --> 예측_결과: XGBoost + MLR 추론
-    예측_결과 --> 코칭_전략: 구간별 분석
+    Dashboard --> PredInput : 선수 프로필 + 환경 데이터 입력
+    PredInput --> PredResult : XGBoost + MLR 추론
+    PredResult --> Coaching : 구간별 분석
 
-    트랙맵 --> 커브_상세: 커브 클릭
-    커브_상세 --> 트랙맵: 닫기
+    TrackMap --> CurveDetail : 커브 클릭
+    CurveDetail --> TrackMap : 닫기
 
-    탐색 --> 비교: 선수 체크박스 선택
-    비교 --> Head_to_Head: 자동 비교
+    Explore --> Compare : 선수 체크박스 선택
+    Compare --> HeadToHead : 자동 비교
 
-    state 챗봇 {
-        [*] --> 질문_입력
-        질문_입력 --> LLM_라우팅
-        LLM_라우팅 --> DB_쿼리
-        DB_쿼리 --> 수치_검증
-        수치_검증 --> 응답_표시
+    state Chatbot {
+        [*] --> QuestionInput
+        QuestionInput --> LLMRouting
+        LLMRouting --> DBQuery
+        DBQuery --> NumVerify
+        NumVerify --> ShowResponse
     }
 
-    대시보드 --> 챗봇: 챗봇 버튼
+    Dashboard --> Chatbot : 챗봇 버튼
+
+    Dashboard : 대시보드
+    TrackMap : 트랙맵
+    Explore : 탐색
+    Compare : 비교
+    PredInput : 예측 입력
+    PredResult : 예측 결과
+    Coaching : 코칭 전략
+    CurveDetail : 커브 상세
+    HeadToHead : Head-to-Head
+    QuestionInput : 질문 입력
+    LLMRouting : LLM 라우팅
+    DBQuery : DB 쿼리
+    NumVerify : 수치 검증
+    ShowResponse : 응답 표시
 ```
 
 ---
@@ -437,52 +452,52 @@ stateDiagram-v2
 
 ```mermaid
 graph TD
-    ROOT[skeleton-analysis/] --> BE[backend/]
-    ROOT --> WEB[web/]
-    ROOT --> TEST[test/]
-    ROOT --> BUILD[빌드 스크립트]
-    ROOT --> INFRA[인프라 설정]
-    ROOT --> DOCS[문서]
+    ROOT["skeleton-analysis/"] --> BE["backend/"]
+    ROOT --> WEB["web/"]
+    ROOT --> TEST["test/"]
+    ROOT --> BUILD["빌드 스크립트"]
+    ROOT --> INFRA["인프라 설정"]
+    ROOT --> DOCS["문서"]
 
-    BE --> BE1[main.py<br/>API 엔드포인트]
-    BE --> BE2[models.py<br/>Pydantic 모델]
-    BE --> BE3[data_service.py<br/>Supabase 비동기 로더]
-    BE --> BE4[config.py<br/>환경 설정]
+    BE --> BE1["main.py\nAPI 엔드포인트"]
+    BE --> BE2["models.py\nPydantic 모델"]
+    BE --> BE3["data_service.py\nSupabase 비동기 로더"]
+    BE --> BE4["config.py\n환경 설정"]
 
-    WEB --> SRC[src/]
-    SRC --> HTML[index.html<br/>SPA 엔트리포인트]
-    SRC --> JSDIR[js/]
-    SRC --> CSSDIR[css/]
+    WEB --> SRC["src/"]
+    SRC --> HTML["index.html\nSPA 엔트리포인트"]
+    SRC --> JSDIR["js/"]
+    SRC --> CSSDIR["css/"]
 
-    JSDIR --> JS1[DashboardController.js]
-    JSDIR --> JS2[DataStore.js]
-    JSDIR --> JS3[PredictionModel.js<br/>1,121줄]
-    JSDIR --> JS4[TrackMapRenderer.js]
-    JSDIR --> JS5[ChartManager.js]
-    JSDIR --> JS6[Chatbot.js]
-    JSDIR --> JS7[TableRenderer.js]
-    JSDIR --> JS8[PlayerAnalyzer.js]
-    JSDIR --> JS9[UIController.js]
+    JSDIR --> JS1["DashboardController.js"]
+    JSDIR --> JS2["DataStore.js"]
+    JSDIR --> JS3["PredictionModel.js\n1,121줄"]
+    JSDIR --> JS4["TrackMapRenderer.js"]
+    JSDIR --> JS5["ChartManager.js"]
+    JSDIR --> JS6["Chatbot.js"]
+    JSDIR --> JS7["TableRenderer.js"]
+    JSDIR --> JS8["PlayerAnalyzer.js"]
+    JSDIR --> JS9["UIController.js"]
 
-    TEST --> UNIT[unit/]
-    TEST --> E2E[e2e/]
-    UNIT --> UT1[datastore.test.js]
-    UNIT --> UT2[prediction.test.js]
-    E2E --> ET1[dashboard.test.js]
-    E2E --> ET2[tabs.test.js]
-    E2E --> ET3[trackmap.test.js]
+    TEST --> UNIT["unit/"]
+    TEST --> E2E2["e2e/"]
+    UNIT --> UT1["datastore.test.js"]
+    UNIT --> UT2["prediction.test.js"]
+    E2E2 --> ET1["dashboard.test.js"]
+    E2E2 --> ET2["tabs.test.js"]
+    E2E2 --> ET3["trackmap.test.js"]
 
-    BUILD --> B1[build_v2.py<br/>XGBoost V2]
-    BUILD --> B2[build_poly_mlr.py<br/>Poly MLR]
-    BUILD --> B3[train_xgb.py<br/>하이퍼파라미터 튜닝]
+    BUILD --> B1["build_v2.py\nXGBoost V2"]
+    BUILD --> B2["build_poly_mlr.py\nPoly MLR"]
+    BUILD --> B3["train_xgb.py\n하이퍼파라미터 튜닝"]
 
-    INFRA --> I1[Dockerfile]
-    INFRA --> I2[nixpacks.toml]
-    INFRA --> I3[nginx.conf]
+    INFRA --> I1["Dockerfile"]
+    INFRA --> I2["nixpacks.toml"]
+    INFRA --> I3["nginx.conf"]
 
-    DOCS --> D1[PREDICTION_MODEL.md]
-    DOCS --> D2[LITERATURE_AND_PROPOSAL.md]
-    DOCS --> D3[DASHBOARD_DESIGN.md]
+    DOCS --> D1["PREDICTION_MODEL.md"]
+    DOCS --> D2["LITERATURE_AND_PROPOSAL.md"]
+    DOCS --> D3["DASHBOARD_DESIGN.md"]
 
     style ROOT fill:#1a1a2e,color:#fff
     style BE fill:#0f3460,color:#fff
@@ -538,11 +553,11 @@ railway up
 
 ```mermaid
 graph LR
-    DEV[로컬 개발] -->|git push| GH[GitHub]
-    GH -->|자동 감지| RAIL[Railway]
-    RAIL -->|nixpacks.toml| BUILD[Nixpacks 빌드<br/>Python 3.12 환경 구성]
-    BUILD --> UVICORN[Uvicorn 서버 시작<br/>FastAPI + 정적 파일]
-    UVICORN --> LIVE[라이브 배포 완료]
+    DEV["로컬 개발"] -->|git push| GH["GitHub"]
+    GH -->|자동 감지| RAIL["Railway"]
+    RAIL -->|nixpacks.toml| BLD["Nixpacks 빌드\nPython 3.12 환경 구성"]
+    BLD --> UVICORN["Uvicorn 서버 시작\nFastAPI + 정적 파일"]
+    UVICORN --> LIVE["라이브 배포 완료"]
 
     style DEV fill:#339af0,color:#fff
     style RAIL fill:#7950f2,color:#fff
@@ -568,26 +583,26 @@ npx playwright test test/e2e/ --grep accessibility
 
 ```mermaid
 graph TB
-    subgraph 단위 테스트
-        UT1[datastore.test.js<br/>데이터 캐싱 로직]
-        UT2[prediction.test.js<br/>ML 추론 정확도]
-        UT3[tableutil.test.js<br/>테이블 유틸리티]
+    subgraph unitTests["단위 테스트"]
+        UT1T["datastore.test.js\n데이터 캐싱 로직"]
+        UT2T["prediction.test.js\nML 추론 정확도"]
+        UT3T["tableutil.test.js\n테이블 유틸리티"]
     end
 
-    subgraph E2E 테스트["E2E 테스트 (Playwright)"]
-        ET1[dashboard.test.js<br/>대시보드 인터랙션]
-        ET2[tabs.test.js<br/>탭 전환]
-        ET3[trackmap.test.js<br/>트랙맵 렌더링]
-        ET4[prediction.test.js<br/>예측 흐름]
+    subgraph e2eTests["E2E 테스트 - Playwright"]
+        ET1T["dashboard.test.js\n대시보드 인터랙션"]
+        ET2T["tabs.test.js\n탭 전환"]
+        ET3T["trackmap.test.js\n트랙맵 렌더링"]
+        ET4T["prediction.test.js\n예측 흐름"]
     end
 
-    subgraph 접근성["접근성 (axe-core)"]
-        AX1[WCAG 2.1 준수<br/>자동 검사]
+    subgraph a11y["접근성 - axe-core"]
+        AX1["WCAG 2.1 준수\n자동 검사"]
     end
 
-    style 단위 테스트 fill:#339af0,color:#fff
-    style E2E 테스트 fill:#f76707,color:#fff
-    style 접근성 fill:#20c997,color:#fff
+    style unitTests fill:#339af0,color:#fff
+    style e2eTests fill:#f76707,color:#fff
+    style a11y fill:#20c997,color:#fff
 ```
 
 ---
