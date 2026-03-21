@@ -180,19 +180,6 @@ sequenceDiagram
     UI-->>User: 환각 없는 답변 표시
 ```
 
-<div align="center">
-<table>
-<tr>
-<td><img src="docs/screenshots/prediction.png" width="100%" alt="예측 모델"/></td>
-<td><img src="docs/screenshots/explore.png" width="100%" alt="데이터 탐색"/></td>
-</tr>
-<tr>
-<td align="center"><b>예측 모델 입력</b></td>
-<td align="center"><b>데이터 탐색 테이블</b></td>
-</tr>
-</table>
-</div>
-
 - **LLM 기반 함수 라우팅** (18종 인사이트 함수)
 - 한국어 조사 제거 (와/과/이랑/은/는) + DB 기반 한국어 이름 해석
 - **모든 수치를 DB 원본과 대조 검증** — 환각(hallucination) 방지
