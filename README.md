@@ -20,7 +20,7 @@
 
 <br/>
 
-<img src="docs/screenshots/demo.gif" width="90%" alt="플랫폼 데모 - 대시보드, 트랙맵, AI 챗봇, 데이터 탐색"/>
+<img src="docs/screenshots/intro.gif" width="90%" alt="대시보드 - 트랙맵 커브 인터랙션"/>
 
 </div>
 
@@ -138,7 +138,7 @@ graph TB
 > 평창 알펜시아 슬라이딩센터의 실제 트랙 구조를 SVG로 재현하여, 각 커브별 데이터를 시각적으로 분석합니다.
 
 <div align="center">
-<img src="docs/screenshots/chatbot.png" width="80%" alt="AI 챗봇이 열린 대시보드"/>
+<img src="docs/screenshots/mid.gif" width="90%" alt="AI 챗봇 대화 + 예측 모델 실행"/>
 </div>
 
 - **SVG 기반** 평창 트랙 지형도 렌더링
@@ -636,6 +636,12 @@ graph TB
     style e2eTests fill:#f76707,color:#fff
     style a11y fill:#20c997,color:#fff
 ```
+
+---
+
+<div align="center">
+<img src="docs/screenshots/footer.gif" width="90%" alt="데이터 탐색, 선수 분석, 멀티 스포츠 전환"/>
+</div>
 
 ---
 
