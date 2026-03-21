@@ -41,6 +41,7 @@
 
 ## 프로젝트 소개
 
+> [!IMPORTANT]
 > **"스타트 0.1초 단축 = 피니시 약 0.3초 단축"** — 슬라이딩 종목에서 0.01초가 메달을 결정합니다.
 
 평창 알펜시아 슬라이딩센터(1,376m, 커브 16개)에서 열리는 **스켈레톤, 루지, 봅슬레이** 경기의 데이터를 수집, 분석, 예측하는 풀스택 웹 플랫폼입니다.
@@ -129,6 +130,9 @@ graph TB
 
 ### 2. 트랙맵 분석
 
+> [!NOTE]
+> 평창 알펜시아 슬라이딩센터의 실제 트랙 구조를 SVG로 재현하여, 각 커브별 데이터를 시각적으로 분석합니다.
+
 - **SVG 기반** 평창 트랙 지형도 렌더링
 - 커브별 진입속도, 온도, 시간 데이터 오버레이
 - **컬러 그라데이션** 속도 범례 (60~140 km/h)
@@ -142,6 +146,10 @@ graph TB
 - **Head-to-Head** 자동 비교 분석
 
 ### 4. AI 챗봇 — 제로 환각 파이프라인
+
+> [!TIP]
+> 자연어로 질문하면 DB에서 직접 데이터를 조회하고, 모든 수치를 원본과 대조 검증한 뒤 응답합니다.
+> 예: *"윤성빈 선수의 최고 기록은?"*, *"3월 평균 피니시 타임 비교해줘"*
 
 ```mermaid
 sequenceDiagram
@@ -232,6 +240,9 @@ graph TB
     style database fill:#533483,color:#fff
 ```
 
+> [!NOTE]
+> 예측 모델(XGBoost, Poly MLR)은 **클라이언트 사이드**에서 JSON으로 로드되어 추론됩니다. 서버 왕복 없이 즉시 예측 결과를 제공합니다.
+
 ---
 
 ## 기술 스택
@@ -305,6 +316,10 @@ graph LR
 
 ## 예측 모델
 
+> [!IMPORTANT]
+> 선행연구에서 **환경 변수(기온, 습도, 기압, 빙질)와 스타트 기록을 통합한 다변량 예측 모델**은 거의 없었습니다.
+> 본 프로젝트는 이 공백을 XGBoost + Polynomial MLR 앙상블로 채웁니다.
+
 > 상세: [PREDICTION_MODEL.md](PREDICTION_MODEL.md) | 선행연구: [LITERATURE_AND_PROPOSAL.md](LITERATURE_AND_PROPOSAL.md)
 
 ### 모델 파이프라인
@@ -359,6 +374,10 @@ graph LR
 ```
 
 ### 핵심 도메인 지식
+
+> [!TIP]
+> 스타트 구간은 선수의 **스프린트 능력**이 직접 반영되는 유일한 구간입니다.
+> 이후 구간은 중력 + 트랙 형상 + 주행 라인에 의해 결정되므로, 스타트 기록이 전체 성적에 3배로 증폭됩니다.
 
 | 법칙 | 수치 |
 |------|------|
@@ -450,62 +469,60 @@ stateDiagram-v2
 
 ## 프로젝트 구조
 
-```mermaid
-graph TD
-    ROOT["skeleton-analysis/"] --> BE["backend/"]
-    ROOT --> WEB["web/"]
-    ROOT --> TEST["test/"]
-    ROOT --> BUILD["빌드 스크립트"]
-    ROOT --> INFRA["인프라 설정"]
-    ROOT --> DOCS["문서"]
-
-    BE --> BE1["main.py\nAPI 엔드포인트"]
-    BE --> BE2["models.py\nPydantic 모델"]
-    BE --> BE3["data_service.py\nSupabase 비동기 로더"]
-    BE --> BE4["config.py\n환경 설정"]
-
-    WEB --> SRC["src/"]
-    SRC --> HTML["index.html\nSPA 엔트리포인트"]
-    SRC --> JSDIR["js/"]
-    SRC --> CSSDIR["css/"]
-
-    JSDIR --> JS1["DashboardController.js"]
-    JSDIR --> JS2["DataStore.js"]
-    JSDIR --> JS3["PredictionModel.js\n1,121줄"]
-    JSDIR --> JS4["TrackMapRenderer.js"]
-    JSDIR --> JS5["ChartManager.js"]
-    JSDIR --> JS6["Chatbot.js"]
-    JSDIR --> JS7["TableRenderer.js"]
-    JSDIR --> JS8["PlayerAnalyzer.js"]
-    JSDIR --> JS9["UIController.js"]
-
-    TEST --> UNIT["unit/"]
-    TEST --> E2E2["e2e/"]
-    UNIT --> UT1["datastore.test.js"]
-    UNIT --> UT2["prediction.test.js"]
-    E2E2 --> ET1["dashboard.test.js"]
-    E2E2 --> ET2["tabs.test.js"]
-    E2E2 --> ET3["trackmap.test.js"]
-
-    BUILD --> B1["build_v2.py\nXGBoost V2"]
-    BUILD --> B2["build_poly_mlr.py\nPoly MLR"]
-    BUILD --> B3["train_xgb.py\n하이퍼파라미터 튜닝"]
-
-    INFRA --> I1["Dockerfile"]
-    INFRA --> I2["nixpacks.toml"]
-    INFRA --> I3["nginx.conf"]
-
-    DOCS --> D1["PREDICTION_MODEL.md"]
-    DOCS --> D2["LITERATURE_AND_PROPOSAL.md"]
-    DOCS --> D3["DASHBOARD_DESIGN.md"]
-
-    style ROOT fill:#1a1a2e,color:#fff
-    style BE fill:#0f3460,color:#fff
-    style WEB fill:#16213e,color:#fff
-    style TEST fill:#533483,color:#fff
-    style BUILD fill:#e94560,color:#fff
-    style INFRA fill:#0a3d62,color:#fff
-    style DOCS fill:#6a0572,color:#fff
+```
+skeleton-analysis/
++-- backend/                    # FastAPI 서버
+|   +-- main.py                 # API 엔드포인트 + 정적 파일 서빙
+|   +-- models.py               # Pydantic 데이터 모델
+|   +-- data_service.py         # Supabase 데이터 로더 (비동기)
+|   +-- config.py               # 환경 설정
+|   +-- requirements.txt        # Python 의존성
+|
++-- web/
+|   +-- src/
+|   |   +-- index.html          # SPA 엔트리포인트
+|   |   +-- js/
+|   |   |   +-- DashboardController.js  # 대시보드 탭 로직
+|   |   |   +-- DataStore.js            # 클라이언트 데이터 캐시
+|   |   |   +-- PredictionModel.js      # ML 추론 엔진 (1,121줄)
+|   |   |   +-- TrackMapRenderer.js     # SVG 트랙맵 렌더링
+|   |   |   +-- ChartManager.js         # Chart.js 래퍼
+|   |   |   +-- Chatbot.js              # AI 챗봇 (LLM + 인사이트)
+|   |   |   +-- TableRenderer.js        # Tabulator 래퍼
+|   |   |   +-- PlayerAnalyzer.js       # 선수 분석 로직
+|   |   |   +-- UIController.js         # UI 상태 관리
+|   |   |   +-- xgb-models.js           # XGBoost JSON 모델
+|   |   |   +-- poly-mlr.js             # Polynomial MLR 계수
+|   |   |   +-- trackmap-data.js        # 트랙 메타데이터
+|   |   +-- css/
+|   |       +-- main.css                # 메인 스타일
+|   |       +-- dashboard.css           # 대시보드 레이아웃
+|   +-- dist/                   # 빌드 산출물
+|   +-- bundle.js               # 번들러
+|
++-- test/
+|   +-- unit/                   # 단위 테스트
+|   |   +-- datastore.test.js
+|   |   +-- prediction.test.js
+|   |   +-- tableutil.test.js
+|   +-- e2e/                    # E2E 테스트 (Playwright)
+|       +-- dashboard.test.js
+|       +-- tabs.test.js
+|       +-- trackmap.test.js
+|       +-- prediction.test.js
+|
++-- build_v2.py                 # XGBoost V2 모델 빌드
++-- build_poly_mlr.py           # Polynomial MLR 빌드
++-- train_xgb.py                # XGBoost 하이퍼파라미터 튜닝
++-- build_track_meta.py         # 트랙 메타데이터 빌드
++-- skeleton_weather_combined.csv  # 기상+경기 결합 데이터
+|
++-- Dockerfile                  # Nginx 기반 컨테이너
++-- nixpacks.toml               # Railway 배포 설정
++-- nginx.conf                  # Nginx 프록시 설정
++-- PREDICTION_MODEL.md         # 예측 모델 상세 문서
++-- LITERATURE_AND_PROPOSAL.md  # 선행연구 리뷰 & 논문 프로포절
++-- DASHBOARD_DESIGN.md         # 대시보드 UI 설계 문서
 ```
 
 ---
@@ -513,6 +530,9 @@ graph TD
 ## 실행 방법
 
 ### 사전 요구사항
+
+> [!WARNING]
+> Python **3.12 이상**이 필요합니다. 3.11 이하에서는 `|` 타입 힌트 문법으로 인해 서버가 시작되지 않습니다.
 
 - Python 3.12+
 - Node.js (테스트 실행 시)
@@ -543,7 +563,8 @@ docker run -p 8080:80 skeleton-analysis
 
 ### Railway 배포
 
-> `nixpacks.toml`이 자동으로 Python 환경을 구성하고 Uvicorn 서버를 시작합니다.
+> [!NOTE]
+> `nixpacks.toml`이 자동으로 Python 3.12 환경을 구성하고 Uvicorn 서버를 시작합니다. 별도 설정 없이 `railway up`만 실행하면 됩니다.
 
 ```bash
 railway up
@@ -578,6 +599,9 @@ npx playwright test test/e2e/
 # 접근성 테스트 (axe-core)
 npx playwright test test/e2e/ --grep accessibility
 ```
+
+> [!CAUTION]
+> E2E 테스트는 **Supabase에 실제 연결**하여 데이터를 조회합니다. 네트워크가 차단된 환경에서는 E2E 테스트가 실패할 수 있습니다.
 
 ### 테스트 구조
 
@@ -634,7 +658,8 @@ graph TB
 | Poirier | 2011 | F.A.S.T. 3.2b 마찰 모델 | 러너-얼음 마찰 비선형 모델 |
 | Colyer et al. | 2017 | 엘리트 스켈레톤 스타트 성능 | 스타트 예측 R2=0.86 |
 
-> 상세: [LITERATURE_AND_PROPOSAL.md](LITERATURE_AND_PROPOSAL.md)
+> [!NOTE]
+> 상세 분석은 [LITERATURE_AND_PROPOSAL.md](LITERATURE_AND_PROPOSAL.md)에서 확인할 수 있습니다.
 
 </details>
 
