@@ -7417,12 +7417,8 @@ window.addEventListener('DOMContentLoaded', async () => {
  * Pipeline: Intent → SQL (parallel vote) → DB exec → Answer + Factcheck
  */
 class Chatbot {
-  static API_URL = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-    ? 'https://bizrouter.ai/api/v1/chat/completions'
-    : '/api/llm/chat/completions';
-  static API_KEY = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-    ? 'sk-br-v1-ab47dd953c844611a9dda14f3a60fa54_uE2bL5jqIHgfnYnvP7pSxieymu10ORU9I_H-Gn7aCgU'
-    : '';
+  static API_URL = '/api/chat';
+  static API_KEY = '';
   static MODEL = 'google/gemini-2.5-flash-lite';
   static SUPABASE_URL = 'https://dxaehcocrbvhatyfmrvp.supabase.co';
   static SUPABASE_KEY = typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY

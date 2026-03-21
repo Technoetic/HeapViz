@@ -1,11 +1,15 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+import httpx
 
-from backend.config import CORS_ORIGINS, SUPABASE_URL, SUPABASE_KEY, STATIC_DIR
+from backend.config import (
+    CORS_ORIGINS, SUPABASE_URL, SUPABASE_KEY, STATIC_DIR,
+    BIZROUTER_API_KEY, BIZROUTER_API_URL,
+)
 from backend.data_service import DataService
 from backend.models import SkeletonRecord
 
@@ -30,6 +34,21 @@ app.add_middleware(
 @app.get("/api/records", response_model=list[SkeletonRecord])
 def get_records():
     return DataService.get_records()
+
+
+@app.post("/api/chat")
+async def chat_proxy(request: Request):
+    body = await request.json()
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.post(
+            BIZROUTER_API_URL,
+            json=body,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {BIZROUTER_API_KEY}",
+            },
+        )
+        return resp.json()
 
 
 @app.get("/")
