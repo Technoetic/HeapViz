@@ -18,6 +18,10 @@
 
 [라이브 데모](https://skeleton-analysis-production-d1bb.up.railway.app/) | [기술 스택](#-기술-스택) | [실행 방법](#-실행-방법)
 
+<br/>
+
+<img src="docs/screenshots/dashboard.png" width="90%" alt="대시보드 - 트랙맵 시각화 + AI 예측"/>
+
 </div>
 
 ---
@@ -133,6 +137,10 @@ graph TB
 > [!NOTE]
 > 평창 알펜시아 슬라이딩센터의 실제 트랙 구조를 SVG로 재현하여, 각 커브별 데이터를 시각적으로 분석합니다.
 
+<div align="center">
+<img src="docs/screenshots/chatbot.png" width="80%" alt="AI 챗봇이 열린 대시보드"/>
+</div>
+
 - **SVG 기반** 평창 트랙 지형도 렌더링
 - 커브별 진입속도, 온도, 시간 데이터 오버레이
 - **컬러 그라데이션** 속도 범례 (60~140 km/h)
@@ -171,6 +179,19 @@ sequenceDiagram
     Verify-->>UI: 검증된 자연어 응답
     UI-->>User: 환각 없는 답변 표시
 ```
+
+<div align="center">
+<table>
+<tr>
+<td><img src="docs/screenshots/prediction.png" width="100%" alt="예측 모델"/></td>
+<td><img src="docs/screenshots/explore.png" width="100%" alt="데이터 탐색"/></td>
+</tr>
+<tr>
+<td align="center"><b>예측 모델 입력</b></td>
+<td align="center"><b>데이터 탐색 테이블</b></td>
+</tr>
+</table>
+</div>
 
 - **LLM 기반 함수 라우팅** (18종 인사이트 함수)
 - 한국어 조사 제거 (와/과/이랑/은/는) + DB 기반 한국어 이름 해석
