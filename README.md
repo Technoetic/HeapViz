@@ -16,7 +16,17 @@
 **스켈레톤 / 루지 / 봅슬레이** 경기 데이터를 실시간으로 분석하고,<br/>
 머신러닝 모델로 피니시 타임을 예측하며, AI 챗봇으로 코칭 인사이트를 제공합니다.
 
-[라이브 데모](https://skeleton-analysis-production-d1bb.up.railway.app/) | [기술 스택](#-기술-스택) | [실행 방법](#-실행-방법)
+[![Live Demo](docs/screenshots/design-btn.gif)](https://skeleton-analysis-production-d1bb.up.railway.app/)
+
+[기술 스택](#-기술-스택) | [실행 방법](#-실행-방법)
+
+<br/>
+
+<img src="docs/screenshots/design-intro.gif" width="90%" alt="트랙 커브 애니메이션 + 구간 기록"/>
+
+<br/>
+
+<img src="docs/screenshots/intro.gif" width="90%" alt="대시보드 - 트랙맵 커브 인터랙션"/>
 
 </div>
 
@@ -131,6 +141,10 @@ graph TB
 
 > [!NOTE]
 > 평창 알펜시아 슬라이딩센터의 실제 트랙 구조를 SVG로 재현하여, 각 커브별 데이터를 시각적으로 분석합니다.
+
+<div align="center">
+<img src="docs/screenshots/mid.gif" width="90%" alt="AI 챗봇 대화 + 예측 모델 실행"/>
+</div>
 
 
 - **SVG 기반** 평창 트랙 지형도 렌더링
@@ -319,6 +333,10 @@ graph LR
 > [!IMPORTANT]
 > 선행연구에서 **환경 변수(기온, 습도, 기압, 빙질)와 스타트 기록을 통합한 다변량 예측 모델**은 거의 없었습니다.
 > 본 프로젝트는 이 공백을 XGBoost + Polynomial MLR 앙상블로 채웁니다.
+
+<div align="center">
+<img src="docs/screenshots/design-mid.gif" width="90%" alt="데이터 파이프라인 - 환경 데이터 + ML 앙상블 예측"/>
+</div>
 
 
 ### 모델 파이프라인
@@ -596,6 +614,10 @@ graph LR
 ---
 
 <div align="center">
+
+<img src="docs/screenshots/design-footer.gif" width="90%" alt="Outro - 핵심 수치 + 태그라인"/>
+
+<br/>
 
 **슬라이딩 스포츠 커뮤니티를 위해 제작되었습니다**
 
