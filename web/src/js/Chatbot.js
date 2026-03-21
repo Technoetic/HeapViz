@@ -4,7 +4,9 @@
  * Pipeline: Intent → SQL (parallel vote) → DB exec → Answer + Factcheck
  */
 class Chatbot {
-  static API_URL = '/api/chat';
+  static API_URL = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+    ? 'https://bizrouter.ai/api/v1/chat/completions'
+    : '/api/llm/chat/completions';
   static API_KEY = '';
   static MODEL = 'google/gemini-2.5-flash-lite';
   static SUPABASE_URL = 'https://dxaehcocrbvhatyfmrvp.supabase.co';
