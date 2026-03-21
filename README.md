@@ -16,17 +16,7 @@
 **스켈레톤 / 루지 / 봅슬레이** 경기 데이터를 실시간으로 분석하고,<br/>
 머신러닝 모델로 피니시 타임을 예측하며, AI 챗봇으로 코칭 인사이트를 제공합니다.
 
-[![Live Demo](docs/screenshots/design-btn.gif)](https://skeleton-analysis-production-d1bb.up.railway.app/)
-
-[기술 스택](#-기술-스택) | [실행 방법](#-실행-방법)
-
-<br/>
-
-<img src="docs/screenshots/design-intro.gif" width="90%" alt="트랙 커브 애니메이션 + 구간 기록"/>
-
-<br/>
-
-<img src="docs/screenshots/intro.gif" width="90%" alt="대시보드 - 트랙맵 커브 인터랙션"/>
+[라이브 데모](https://skeleton-analysis-production-d1bb.up.railway.app/) | [기술 스택](#-기술-스택) | [실행 방법](#-실행-방법)
 
 </div>
 
@@ -43,7 +33,6 @@
 - [데이터 흐름](#-데이터-흐름)
 - [프로젝트 구조](#-프로젝트-구조)
 - [실행 방법](#-실행-방법)
-- [테스트](#-테스트)
 - [팀 소개](#-팀-소개)
 - [참고 자료](#-참고-자료)
 
@@ -143,9 +132,6 @@ graph TB
 > [!NOTE]
 > 평창 알펜시아 슬라이딩센터의 실제 트랙 구조를 SVG로 재현하여, 각 커브별 데이터를 시각적으로 분석합니다.
 
-<div align="center">
-<img src="docs/screenshots/mid.gif" width="90%" alt="AI 챗봇 대화 + 예측 모델 실행"/>
-</div>
 
 - **SVG 기반** 평창 트랙 지형도 렌더링
 - 커브별 진입속도, 온도, 시간 데이터 오버레이
@@ -334,11 +320,6 @@ graph LR
 > 선행연구에서 **환경 변수(기온, 습도, 기압, 빙질)와 스타트 기록을 통합한 다변량 예측 모델**은 거의 없었습니다.
 > 본 프로젝트는 이 공백을 XGBoost + Polynomial MLR 앙상블로 채웁니다.
 
-<div align="center">
-<img src="docs/screenshots/design-mid.gif" width="90%" alt="데이터 파이프라인 - 환경 데이터 + ML 앙상블 예측"/>
-</div>
-
-> 상세: [PREDICTION_MODEL.md](PREDICTION_MODEL.md) | 선행연구: [LITERATURE_AND_PROPOSAL.md](LITERATURE_AND_PROPOSAL.md)
 
 ### 모델 파이프라인
 
@@ -518,29 +499,7 @@ skeleton-analysis/
 |   +-- dist/                   # 빌드 산출물
 |   +-- bundle.js               # 번들러
 |
-+-- test/
-|   +-- unit/                   # 단위 테스트
-|   |   +-- datastore.test.js
-|   |   +-- prediction.test.js
-|   |   +-- tableutil.test.js
-|   +-- e2e/                    # E2E 테스트 (Playwright)
-|       +-- dashboard.test.js
-|       +-- tabs.test.js
-|       +-- trackmap.test.js
-|       +-- prediction.test.js
-|
-+-- build_v2.py                 # XGBoost V2 모델 빌드
-+-- build_poly_mlr.py           # Polynomial MLR 빌드
-+-- train_xgb.py                # XGBoost 하이퍼파라미터 튜닝
-+-- build_track_meta.py         # 트랙 메타데이터 빌드
-+-- skeleton_weather_combined.csv  # 기상+경기 결합 데이터
-|
-+-- Dockerfile                  # Nginx 기반 컨테이너
 +-- nixpacks.toml               # Railway 배포 설정
-+-- nginx.conf                  # Nginx 프록시 설정
-+-- PREDICTION_MODEL.md         # 예측 모델 상세 문서
-+-- LITERATURE_AND_PROPOSAL.md  # 선행연구 리뷰 & 논문 프로포절
-+-- DASHBOARD_DESIGN.md         # 대시보드 UI 설계 문서
 ```
 
 ---
@@ -605,50 +564,6 @@ graph LR
 
 ---
 
-## 테스트
-
-```bash
-# 단위 테스트
-npx playwright test test/unit/
-
-# E2E 테스트 (Playwright)
-npx playwright test test/e2e/
-
-# 접근성 테스트 (axe-core)
-npx playwright test test/e2e/ --grep accessibility
-```
-
-> [!CAUTION]
-> E2E 테스트는 **Supabase에 실제 연결**하여 데이터를 조회합니다. 네트워크가 차단된 환경에서는 E2E 테스트가 실패할 수 있습니다.
-
-### 테스트 구조
-
-```mermaid
-graph TB
-    subgraph unitTests["단위 테스트"]
-        UT1T["datastore.test.js\n데이터 캐싱 로직"]
-        UT2T["prediction.test.js\nML 추론 정확도"]
-        UT3T["tableutil.test.js\n테이블 유틸리티"]
-    end
-
-    subgraph e2eTests["E2E 테스트 - Playwright"]
-        ET1T["dashboard.test.js\n대시보드 인터랙션"]
-        ET2T["tabs.test.js\n탭 전환"]
-        ET3T["trackmap.test.js\n트랙맵 렌더링"]
-        ET4T["prediction.test.js\n예측 흐름"]
-    end
-
-    subgraph a11y["접근성 - axe-core"]
-        AX1["WCAG 2.1 준수\n자동 검사"]
-    end
-
-    style unitTests fill:#339af0,color:#fff
-    style e2eTests fill:#f76707,color:#fff
-    style a11y fill:#20c997,color:#fff
-```
-
----
-
 ## 팀 소개
 
 <table>
@@ -676,27 +591,11 @@ graph TB
 | Poirier | 2011 | F.A.S.T. 3.2b 마찰 모델 | 러너-얼음 마찰 비선형 모델 |
 | Colyer et al. | 2017 | 엘리트 스켈레톤 스타트 성능 | 스타트 예측 R2=0.86 |
 
-> [!NOTE]
-> 상세 분석은 [LITERATURE_AND_PROPOSAL.md](LITERATURE_AND_PROPOSAL.md)에서 확인할 수 있습니다.
-
-</details>
-
-<details>
-<summary><b>기술 문서</b></summary>
-
-- [예측 모델 알고리즘 상세](PREDICTION_MODEL.md) — 6종 모델 수식, 교차검증, 부트스트랩 CI
-- [대시보드 디자인 분석](DASHBOARD_DESIGN.md) — 3단 레이아웃, 색상 체계, UI 컴포넌트
-- [선행연구 & 프로포절](LITERATURE_AND_PROPOSAL.md) — 7대 요인 분석, 핵심 인용 연구
-
 </details>
 
 ---
 
 <div align="center">
-
-<img src="docs/screenshots/design-footer.gif" width="90%" alt="기술 스택 조립 애니메이션"/>
-
-<br/>
 
 **슬라이딩 스포츠 커뮤니티를 위해 제작되었습니다**
 
