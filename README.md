@@ -16,7 +16,9 @@
 **스켈레톤 / 루지 / 봅슬레이** 경기 데이터를 실시간으로 분석하고,<br/>
 머신러닝 모델로 피니시 타임을 예측하며, AI 챗봇으로 코칭 인사이트를 제공합니다.
 
-[라이브 데모](https://skeleton-analysis-production-d1bb.up.railway.app/) | [기술 스택](#-기술-스택) | [실행 방법](#-실행-방법)
+[![Live Demo](docs/screenshots/design-btn.gif)](https://skeleton-analysis-production-d1bb.up.railway.app/)
+
+[기술 스택](#-기술-스택) | [실행 방법](#-실행-방법)
 
 <br/>
 
