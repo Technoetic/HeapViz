@@ -639,12 +639,6 @@ graph TB
 
 ---
 
-<div align="center">
-<img src="docs/screenshots/footer.gif" width="90%" alt="데이터 탐색, 선수 분석, 멀티 스포츠 전환"/>
-</div>
-
----
-
 ## 팀 소개
 
 <table>
