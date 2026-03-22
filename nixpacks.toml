@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["python312Full"]
+nixPkgs = ["python312Full", "python312Packages.pip"]
 aptPkgs = []
 
 [phases.install]
