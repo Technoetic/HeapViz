@@ -36,6 +36,11 @@ def get_records():
     return DataService.get_records()
 
 
+@app.get("/api/config")
+def get_config():
+    return {"supabaseUrl": SUPABASE_URL, "supabaseKey": SUPABASE_KEY}
+
+
 @app.post("/api/chat")
 async def chat_proxy(request: Request):
     body = await request.json()

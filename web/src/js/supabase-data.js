@@ -1,5 +1,5 @@
-const SUPABASE_URL = 'https://dxaehcocrbvhatyfmrvp.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_5_U3dll4HB9fAXOxmgm83w_wnOiei-e';
+let SUPABASE_URL = '';
+let SUPABASE_KEY = '';
 
 const SPORT_CONFIG = {
   skeleton: {
@@ -69,7 +69,18 @@ async function switchSport(sport) {
 
 let RAW_DATA = [];
 let ATHLETES = [];
-const _supabaseReady = Promise.all([fetchRecords('skeleton'), fetchAthletes('skeleton')]).then(([records, athletes]) => {
+
+async function _loadConfig() {
+  const resp = await fetch('/api/config');
+  if (!resp.ok) throw new Error(`Config fetch failed: ${resp.status}`);
+  const cfg = await resp.json();
+  SUPABASE_URL = cfg.supabaseUrl;
+  SUPABASE_KEY = cfg.supabaseKey;
+}
+
+const _supabaseReady = _loadConfig().then(() =>
+  Promise.all([fetchRecords('skeleton'), fetchAthletes('skeleton')])
+).then(([records, athletes]) => {
   RAW_DATA = records;
   ATHLETES = athletes;
 }).catch(err => {

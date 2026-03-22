@@ -21,3 +21,5 @@ web/dist/track_map.html
 web/UsersAdminDesktoppredwebscreenshots/
 web/screenshots/
 web/tests/
+
+.env

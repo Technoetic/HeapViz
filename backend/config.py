@@ -1,7 +1,7 @@
 import os
 
-SUPABASE_URL = "https://dxaehcocrbvhatyfmrvp.supabase.co"
-SUPABASE_KEY = "sb_publishable_5_U3dll4HB9fAXOxmgm83w_wnOiei-e"
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
 
 BIZROUTER_API_KEY = os.environ.get("BIZROUTER_API_KEY", "")
 BIZROUTER_API_URL = "https://bizrouter.ai/api/v1/chat/completions"
