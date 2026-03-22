@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 import httpx
 
@@ -54,6 +54,40 @@ async def chat_proxy(request: Request):
             },
         )
         return resp.json()
+
+
+@app.api_route("/api/kma/{path:path}", methods=["GET", "POST"])
+async def kma_proxy(request: Request, path: str):
+    target = f"https://apihub.kma.go.kr/api/{path}"
+    params = dict(request.query_params)
+    async with httpx.AsyncClient(timeout=15) as client:
+        resp = await client.request(
+            request.method,
+            target,
+            params=params,
+            headers={"Host": "apihub.kma.go.kr"},
+        )
+        return Response(content=resp.content, status_code=resp.status_code,
+                        media_type=resp.headers.get("content-type", "application/json"))
+
+
+@app.api_route("/api/llm/{path:path}", methods=["GET", "POST"])
+async def llm_proxy(request: Request, path: str):
+    target = f"https://bizrouter.ai/api/v1/{path}"
+    body = await request.body()
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.request(
+            request.method,
+            target,
+            content=body,
+            headers={
+                "Host": "bizrouter.ai",
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {BIZROUTER_API_KEY}",
+            },
+        )
+        return Response(content=resp.content, status_code=resp.status_code,
+                        media_type=resp.headers.get("content-type", "application/json"))
 
 
 @app.get("/")
