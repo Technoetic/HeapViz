@@ -282,6 +282,20 @@ RULES:
 
 
 
+  _renderMd(s) {
+    let h = s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    h = h.replace(/^###\s+(.+)$/gm, "<strong>$1</strong>");
+    h = h.replace(/^##\s+(.+)$/gm, "<strong>$1</strong>");
+    h = h.replace(/[*][*]([^*]+)[*][*]/g, "<strong>$1</strong>");
+    h = h.replace(/[*]([^*]+)[*]/g, "<em>$1</em>");
+    h = h.split(String.fromCharCode(10)).join("<br>");
+    return h;
+  }
+
+  _escHtml(s) {
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").split(String.fromCharCode(10)).join("<br>");
+  }
+
   async _naturalWrap(question, factText) {
 
     // If factText is very short or an error/status message, return as-is
