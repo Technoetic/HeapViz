@@ -390,8 +390,8 @@ class DashboardController {
     // XGBoost 출발 전 예측 (종목별 모델 선택)
     let xgbPredicted = null;
     let xgbModel = null;
-    const sportModels = (typeof XGB_MODELS !== 'undefined' && typeof CURRENT_SPORT !== 'undefined')
-      ? XGB_MODELS[CURRENT_SPORT] : (typeof XGB_MODELS !== 'undefined' ? XGB_MODELS : null);
+    const sportModels = (typeof XGB_MODELS !== 'undefined')
+      ? (XGB_MODELS[CURRENT_SPORT] || XGB_MODELS) : null;
     const preModel = sportModels ? sportModels.pre : null;
     if (preModel) {
       const dewPoint = PredictionModel.calcDewPoint(inp.airTemp, inp.humidity);
