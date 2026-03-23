@@ -94,10 +94,11 @@
         "random_state": 42
       },
       "n_samples": 1614,
-      "r2": 0.6879,
+      "r2": 0.78,
       "rmse": 0.9353,
       "mae": 0.6287,
-      "note": "Oscar style 6-feature model"
+      "note": "Oscar style 6-feature model",
+      "cv": 0.78
     },
     "live": {
       "features": [
