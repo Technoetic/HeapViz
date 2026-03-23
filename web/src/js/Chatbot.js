@@ -2060,7 +2060,7 @@ RULES:
 
           const answer = await this._callLLM([
 
-            { role: 'system', content: '당신은 슬라이딩 스포츠 전문 AI입니다. 주어진 기상 데이터를 바탕으로 자연스러운 한국어로 답변하세요. 트랙 상태와 경기에 미치는 영향도 분석해주세요.' },
+            { role: 'system', content: '당신은 슬라이딩 스포츠 전문 AI입니다. 주어진 기상 데이터를 바탕으로 핵심만 간결하게 한국어로 답변하세요. 200자 이내.' },
 
             { role: 'user', content: question + ' 현재 평창 대관령 기상 데이터: ' + JSON.stringify(weather) },
 
@@ -2108,7 +2108,7 @@ RULES:
         }
         
         const answer = await this._callLLM([
-          { role: 'system', content: '당신은 슬라이딩 스포츠 전문 코치 AI입니다. 주어진 데이터를 바탕으로 구체적이고 실용적인 코칭 조언을 한국어로 제공하세요. 데이터에 있는 숫자를 인용하세요.' },
+          { role: 'system', content: '당신은 슬라이딩 스포츠 전문 코치 AI입니다. 주어진 데이터를 바탕으로 핵심 코칭 조언을 한국어로 제공하세요. 반드시 300자 이내로 간결하게 답변하세요. 데이터 숫자를 인용하세요.' },
           { role: 'user', content: question + ' [데이터] ' + context },
         ]);
         return { text: answer };
