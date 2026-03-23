@@ -2583,6 +2583,7 @@ Categories: record_query, player_compare, environment_analysis, prediction, coac
 - If it's about weather/temperature/humidity, classify as environment_analysis.
 
 - If it asks to compare two or more players, classify as player_compare.
+- If it is about improving performance, winning medals, training tips, coaching advice, or how to get faster, classify as coaching.
 
 Reply with ONLY the category name.` },
 
