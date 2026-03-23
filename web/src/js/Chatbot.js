@@ -22,9 +22,7 @@ class Chatbot {
 
   static SUPABASE_URL = 'https://dxaehcocrbvhatyfmrvp.supabase.co';
 
-  static SUPABASE_KEY = typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY
-
-    : 'sb_publishable_5_U3dll4HB9fAXOxmgm83w_wnOiei-e';
+  static SUPABASE_KEY = (typeof SUPABASE_KEY !== 'undefined' && SUPABASE_KEY) ? SUPABASE_KEY : 'sb_publishable_5_U3dll4HB9fAXOxmgm83w_wnOiei-e';
 
 
 
