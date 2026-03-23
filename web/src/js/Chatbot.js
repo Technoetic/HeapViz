@@ -2084,6 +2084,42 @@ RULES:
 
 
 
+    // 코칭 질문 -> DB 기반 성공 패턴 분석
+    if (intentResult.includes('coaching')) {
+      try {
+        const h = { 'apikey': Chatbot.SUPABASE_KEY, 'Authorization': 'Bearer ' + Chatbot.SUPABASE_KEY };
+        const baseUrl = Chatbot.SUPABASE_URL + '/rest/v1/' + tables.records;
+        const athUrl = Chatbot.SUPABASE_URL + '/rest/v1/' + tables.athletes;
+        
+        const [topRecords, athletes] = await Promise.all([
+          fetch(baseUrl + '?select=name,finish,start_time,speed&is_normal=eq.true&order=finish&limit=50', {headers: h}).then(r => r.json()),
+          fetch(athUrl + '?select=name,height_cm,weight_kg,gender&height_cm=not.is.null&order=name', {headers: h}).then(r => r.json()),
+        ]);
+        
+        const topNames = [...new Set(topRecords.map(r => r.name))].slice(0, 5);
+        const topAvgStart = (topRecords.slice(0, 20).reduce((s, r) => s + parseFloat(r.start_time), 0) / 20).toFixed(2);
+        const topAvgFinish = (topRecords.slice(0, 20).reduce((s, r) => s + parseFloat(r.finish), 0) / 20).toFixed(2);
+        const topAthletes = athletes.filter(a => topNames.includes(a.name));
+        
+        let context = '상위 기록 선수: ' + topNames.join(', ');
+        context += '. 상위 20개 기록 평균 스타트: ' + topAvgStart + '초, 평균 피니시: ' + topAvgFinish + '초.';
+        if (topAthletes.length > 0) {
+          const avgH = (topAthletes.reduce((s, a) => s + parseFloat(a.height_cm || 175), 0) / topAthletes.length).toFixed(0);
+          const avgW = (topAthletes.reduce((s, a) => s + parseFloat(a.weight_kg || 75), 0) / topAthletes.length).toFixed(0);
+          context += ' 상위 선수 평균 체격: ' + avgH + 'cm/' + avgW + 'kg.';
+        }
+        
+        const answer = await this._callLLM([
+          { role: 'system', content: '당신은 슬라이딩 스포츠 전문 코치 AI입니다. 주어진 데이터를 바탕으로 구체적이고 실용적인 코칭 조언을 한국어로 제공하세요. 데이터에 있는 숫자를 인용하세요.' },
+          { role: 'user', content: question + ' [데이터] ' + context },
+        ]);
+        return { text: answer };
+      } catch (e) {
+        console.warn('[Chatbot] coaching failed:', e);
+        return { text: '코칭 분석 중 오류가 발생했습니다. 다시 시도해주세요.' };
+      }
+    }
+
     // SQL consensus vote (majority from 5)
 
     const validSqls = sqlResults.filter(s => this._validateSQL(s, tables));
@@ -2540,7 +2576,7 @@ Reply with ONLY a number between 0.0 and 1.0.` },
 
       { role: 'system', content: `You classify user questions about sliding sports (skeleton/luge/bobsled) into categories.
 
-Categories: record_query, player_compare, environment_analysis, prediction, out_of_scope
+Categories: record_query, player_compare, environment_analysis, prediction, coaching, out_of_scope
 
 - If the input is just a player name (e.g. "여찬혁", "김지수"), classify as record_query.
 
