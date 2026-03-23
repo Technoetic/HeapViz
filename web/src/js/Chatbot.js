@@ -1017,6 +1017,25 @@ RULES:
       return { text: '이 질문은 경기 기록 데이터로 답변할 수 없습니다. 기록, 선수, 환경 관련 질문을 해주세요.' };
     }
 
+    // 날씨 질문 → KMA API 직접 호출
+    if (intentResult.includes('environment')) {
+      try {
+        const weather = await this._fetchKMAWeather();
+        if (weather) {
+          const answer = await this._callLLM([
+            { role: 'system', content: '당신은 슬라이딩 스포츠 전문 AI입니다. 주어진 기상 데이터를 바탕으로 자연스러운 한국어로 답변하세요. 트랙 상태와 경기에 미치는 영향도 분석해주세요.' },
+            { role: 'user', content: question + '
+
+현재 평창 대관령 기상 데이터:
+' + JSON.stringify(weather, null, 2) },
+          ]);
+          return { text: answer };
+        }
+      } catch (e) {
+        console.warn('[Chatbot] KMA fallback failed:', e);
+      }
+    }
+
     // SQL consensus vote (majority from 5)
     const validSqls = sqlResults.filter(s => this._validateSQL(s, tables));
     if (validSqls.length === 0) {
@@ -1605,4 +1624,34 @@ CRITICAL RULES:
 // Auto-init
 document.addEventListener('DOMContentLoaded', () => {
   window._chatbot = new Chatbot();
+
+
+  async _fetchKMAWeather() {
+    const KMA_KEY = 'ncpn3dPgT5OKZ93T4D-TJw';
+    const now = new Date();
+    const kst = new Date(now.getTime() + 9 * 3600000 - 2 * 60000);
+    const tm2 = kst.toISOString().replace(/[-T:]/g, '').slice(0, 12);
+    const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    const base = isLocal ? 'https://apihub.kma.go.kr/api' : '/api/kma';
+    const url = base + '/typ01/cgi-bin/url/nph-aws2_min?tm2=' + tm2 + '&stn=100&disp=0&help=0&authKey=' + KMA_KEY;
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('KMA ' + resp.status);
+    const text = await resp.text();
+    const dataLine = text.split('
+').find(l => l.trim() && !l.startsWith('#'));
+    if (!dataLine) return null;
+    const c = dataLine.trim().split(/\s+/);
+    const v = s => { const n = parseFloat(s); return (!isNaN(n) && n > -90) ? n : null; };
+    return {
+      time: c[0],
+      station: '대관령 (평창)',
+      air_temp_c: v(c[8]),
+      humidity_pct: v(c[14]),
+      pressure_hpa: v(c[15]),
+      dewpoint_c: v(c[17]),
+      wind_dir_deg: v(c[2]),
+      wind_speed_ms: v(c[3]),
+      wind_gust_ms: v(c[5]),
+    };
+  }
 });
