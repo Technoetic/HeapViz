@@ -1,4 +1,10 @@
 {
+  "trainN": 638,
+  "trainR2": 0.9943,
+  "trainRMSE": 0.117,
+  "trainMAE": 0.0869,
+  "cvR2": 0.8912,
+  "cvR2Std": 0.1609,
   "features": [
     "start_time",
     "temp_avg",
@@ -19,18 +25,24 @@
     "풍속",
     "여성 여부"
   ],
-  "trainN": 119,
-  "trainR2": 0.8107,
-  "trainRMSE": 0.9102,
-  "trainMAE": 0.4525,
-  "cvR2": 0.2013,
-  "cvR2Std": 0.2551,
+  "importance": {
+    "start_time": 0.2833,
+    "temp_avg": 0.0801,
+    "air_temp": 0.0747,
+    "humidity_pct": 0.1191,
+    "pressure_hpa": 0.0805,
+    "dewpoint_c": 0.223,
+    "wind_speed_ms": 0.0818,
+    "is_female": 0.0576
+  },
   "params": {
-    "learning_rate": 0.05,
+    "colsample_bytree": 0.8,
+    "learning_rate": 0.1,
     "max_depth": 5,
-    "min_child_weight": 5,
-    "n_estimators": 100,
-    "reg_lambda": 5.0,
-    "subsample": 0.8
+    "min_child_weight": 3,
+    "n_estimators": 300,
+    "reg_alpha": 0.1,
+    "reg_lambda": 1.0,
+    "subsample": 0.7
   }
 }
