@@ -1030,6 +1030,7 @@ RULES:
         }
       } catch (e) {
         console.warn('[Chatbot] KMA fallback failed:', e);
+        return { text: '날씨 정보를 가져오는 데 실패했습니다. 다시 시도해주세요.' };
       }
     }
 
@@ -1592,6 +1593,25 @@ CRITICAL RULES:
     wind_speed_ms: '풍속',
   };
 
+
+  async _fetchKMAWeather() {
+    const KMA_KEY = 'ncpn3dPgT5OKZ93T4D-TJw';
+    const now = new Date();
+    const kst = new Date(now.getTime() + 9 * 3600000 - 2 * 60000);
+    const tm2 = kst.toISOString().replace(/[-T:]/g, '').slice(0, 12);
+    const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    const base = isLocal ? 'https://apihub.kma.go.kr/api' : '/api/kma';
+    const url = base + '/typ01/cgi-bin/url/nph-aws2_min?tm2=' + tm2 + '&stn=100&disp=0&help=0&authKey=' + KMA_KEY;
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('KMA ' + resp.status);
+    const text = await resp.text();
+    const lines = text.split(String.fromCharCode(10));
+    const dataLine = lines.find(l => l.trim() && !l.startsWith('#'));
+    if (!dataLine) return null;
+    const c = dataLine.trim().split(/\s+/);
+    const v = s => { const n = parseFloat(s); return (!isNaN(n) && n > -90) ? n : null; };
+    return { time: c[0], station: '대관령 (평창)', air_temp_c: v(c[8]), humidity_pct: v(c[14]), pressure_hpa: v(c[15]), dewpoint_c: v(c[17]), wind_dir_deg: v(c[2]), wind_speed_ms: v(c[3]), wind_gust_ms: v(c[5]) };
+  }
   _buildTable(data) {
     if (!data || data.length === 0) return '';
     // Show only key columns that exist in data
