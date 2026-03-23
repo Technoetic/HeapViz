@@ -9543,7 +9543,9 @@ RULES:
     // 코칭 질문 -> insight 함수로 위임
     if (intentResult.includes('coaching')) {
       try {
-        const insightResult = await this._runInsightFunc('coaching', tables);
+        const h = { 'apikey': Chatbot.SUPABASE_KEY, 'Authorization': 'Bearer ' + Chatbot.SUPABASE_KEY };
+        const baseUrl = Chatbot.SUPABASE_URL + '/rest/v1/' + tables.records;
+        const insightResult = await this._execInsightFunc('coaching', question, baseUrl, h, null, tables);
         if (insightResult && insightResult.text) {
           const answer = await this._callLLM([
             { role: 'system', content: '당신은 슬라이딩 스포츠 전문 코치 AI입니다. 주어진 데이터를 바탕으로 핵심 코칭 조언을 한국어로 제공하세요. 반드시 300자 이내로 간결하게 답변하세요. 데이터 숫자를 인용하세요.' },
