@@ -7556,7 +7556,7 @@ RULES:
 
   _addBotMessage(text, isTable = false) {
     const el = document.getElementById('chatbot-messages');
-    const content = isTable ? text : this._escHtml(text);
+    const content = isTable ? text : this._renderMd(text);
     el.innerHTML += `<div class="chatbot-msg bot"><div class="chatbot-bubble bot">${content}</div></div>`;
     el.scrollTop = el.scrollHeight;
   }
