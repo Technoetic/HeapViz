@@ -1,10 +1,10 @@
 {
-  "trainN": 786,
-  "trainR2": 0.5962,
-  "trainRMSE": 1.6667,
-  "trainMAE": 0.9653,
-  "cvR2": 0.1141,
-  "cvR2Std": 0.2187,
+  "trainN": 785,
+  "trainR2": 0.8511,
+  "trainRMSE": 0.978,
+  "trainMAE": 0.5427,
+  "cvR2": 0.1635,
+  "cvR2Std": 0.0849,
   "features": [
     "start_time",
     "temp_avg",
@@ -13,7 +13,13 @@
     "pressure_hpa",
     "dewpoint_c",
     "wind_speed_ms",
-    "is_female"
+    "is_female",
+    "is_lady",
+    "is_youth",
+    "is_junior",
+    "height_cm",
+    "weight_kg",
+    "air_density"
   ],
   "featureLabels": [
     "스타트 시간",
@@ -23,26 +29,38 @@
     "기압",
     "이슬점",
     "풍속",
-    "여성 여부"
+    "여성 여부",
+    "레이디 출발",
+    "유스 출발",
+    "주니어 출발",
+    "키",
+    "체중",
+    "공기밀도"
   ],
   "importance": {
-    "start_time": 0.2594,
-    "temp_avg": 0.1009,
-    "air_temp": 0.0919,
-    "humidity_pct": 0.1215,
-    "pressure_hpa": 0.0729,
-    "dewpoint_c": 0.2307,
-    "wind_speed_ms": 0.0673,
-    "is_female": 0.0554
+    "start_time": 0.0612,
+    "temp_avg": 0.0219,
+    "air_temp": 0.0525,
+    "humidity_pct": 0.0525,
+    "pressure_hpa": 0.0855,
+    "dewpoint_c": 0.4273,
+    "wind_speed_ms": 0.0254,
+    "is_female": 0.0362,
+    "is_lady": 0.0,
+    "is_youth": 0.0307,
+    "is_junior": 0.0,
+    "height_cm": 0.0818,
+    "weight_kg": 0.0595,
+    "air_density": 0.0655
   },
   "params": {
-    "colsample_bytree": 0.7,
     "learning_rate": 0.01,
-    "max_depth": 3,
-    "min_child_weight": 10,
-    "n_estimators": 300,
+    "max_depth": 6,
+    "min_child_weight": 1,
+    "n_estimators": 500,
+    "colsample_bytree": 1.0,
     "reg_alpha": 0,
-    "reg_lambda": 1.0,
-    "subsample": 0.7
+    "reg_lambda": 10.0,
+    "subsample": 0.8
   }
 }

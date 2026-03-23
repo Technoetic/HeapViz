@@ -1,127 +1,80 @@
 {
-  "pre": {
-    "features": [
-      "start_time",
-      "temp_avg",
-      "air_temp",
-      "humidity_pct",
-      "pressure_hpa",
-      "dewpoint_c",
-      "wind_speed_ms",
-      "is_female",
-      "height_cm",
-      "weight_kg",
-      "bmi",
-      "month",
-      "day_of_season",
-      "air_density"
-    ],
-    "featureLabels": [
-      "스타트 시간",
-      "얼음 온도",
-      "기온",
-      "습도",
-      "현지기압",
-      "이슬점",
-      "풍속",
-      "여성 여부",
-      "키",
-      "체중",
-      "BMI",
-      "월",
-      "시즌일차",
-      "공기밀도"
-    ],
-    "trainN": 1607,
-    "trainR2": 0.9237,
-    "trainRMSE": 0.4696,
-    "trainMAE": 0.3257,
-    "cvR2": 0.5292,
-    "cvR2Std": 0.1665,
-    "importance": {
-      "start_time": 0.1766,
-      "temp_avg": 0.0291,
-      "air_temp": 0.0445,
-      "humidity_pct": 0.0374,
-      "pressure_hpa": 0.0359,
-      "dewpoint_c": 0.122,
-      "wind_speed_ms": 0.0229,
-      "is_female": 0.0378,
-      "height_cm": 0.1197,
-      "weight_kg": 0.1225,
-      "bmi": 0.0542,
-      "month": 0.0784,
-      "day_of_season": 0.0812,
-      "air_density": 0.0378
+  "skeleton": {
+    "pre": {
+      "features": [
+        "start_time",
+        "height_cm",
+        "weight_kg",
+        "temp_avg",
+        "air_density",
+        "dewpoint_c"
+      ],
+      "labels": [
+        "스타트 시간",
+        "키",
+        "체중",
+        "얼음 온도",
+        "공기밀도",
+        "이슬점"
+      ],
+      "params": {
+        "learning_rate": 0.1,
+        "max_depth": 4,
+        "min_child_weight": 3,
+        "n_estimators": 200,
+        "subsample": 0.8,
+        "random_state": 42
+      },
+      "n_samples": 1614,
+      "r2": 0.6755,
+      "rmse": 0.9508,
+      "mae": 0.6561,
+      "note": "Oscar style 6-feature model"
     },
-    "params": {
-      "learning_rate": 0.05,
-      "max_depth": 4,
-      "min_child_weight": 10,
-      "n_estimators": 500,
-      "colsample_bytree": 0.7,
-      "reg_alpha": 0.5,
-      "reg_lambda": 1.0,
-      "subsample": 0.8
+    "live": {
+      "features": [
+        "start_time",
+        "int1",
+        "int2",
+        "int3",
+        "int4",
+        "temp_avg",
+        "air_temp",
+        "humidity_pct",
+        "pressure_hpa",
+        "dewpoint_c",
+        "wind_speed_ms",
+        "is_female"
+      ],
+      "labels": [
+        "스타트 시간",
+        "Int.1",
+        "Int.2",
+        "Int.3",
+        "Int.4",
+        "얼음 온도",
+        "기온",
+        "습도",
+        "현지기압",
+        "이슬점",
+        "풍속",
+        "여성 여부"
+      ],
+      "params": {
+        "colsample_bytree": 1.0,
+        "learning_rate": 0.05,
+        "max_depth": 6,
+        "min_child_weight": 5,
+        "n_estimators": 200,
+        "reg_lambda": 5.0,
+        "subsample": 0.8,
+        "random_state": 42
+      },
+      "n_samples": 1578,
+      "r2": 0.9582,
+      "rmse": 0.3468,
+      "mae": 0.1629
     }
   },
-  "live": {
-    "features": [
-      "start_time",
-      "int1",
-      "int2",
-      "int3",
-      "int4",
-      "temp_avg",
-      "air_temp",
-      "humidity_pct",
-      "pressure_hpa",
-      "dewpoint_c",
-      "wind_speed_ms",
-      "is_female"
-    ],
-    "featureLabels": [
-      "스타트 시간",
-      "Int.1",
-      "Int.2",
-      "Int.3",
-      "Int.4",
-      "얼음 온도",
-      "기온",
-      "습도",
-      "현지기압",
-      "이슬점",
-      "풍속",
-      "여성 여부"
-    ],
-    "trainN": 1922,
-    "trainR2": 0.9858,
-    "trainRMSE": 0.1989,
-    "trainMAE": 0.0951,
-    "cvR2": 0.9561,
-    "cvR2Std": 0.0318,
-    "importance": {
-      "start_time": 0.0202,
-      "int1": 0.0151,
-      "int2": 0.0224,
-      "int3": 0.0094,
-      "int4": 0.8852,
-      "temp_avg": 0.0086,
-      "air_temp": 0.0067,
-      "humidity_pct": 0.008,
-      "pressure_hpa": 0.0043,
-      "dewpoint_c": 0.01,
-      "wind_speed_ms": 0.0079,
-      "is_female": 0.0022
-    },
-    "params": {
-      "colsample_bytree": 1.0,
-      "learning_rate": 0.05,
-      "max_depth": 6,
-      "min_child_weight": 5,
-      "n_estimators": 100,
-      "reg_lambda": 5.0,
-      "subsample": 0.8
-    }
-  }
+  "generated": "2026-03-23"
 }
