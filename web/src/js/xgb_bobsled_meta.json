@@ -1,0 +1,36 @@
+{
+  "features": [
+    "start_time",
+    "temp_avg",
+    "air_temp",
+    "humidity_pct",
+    "pressure_hpa",
+    "dewpoint_c",
+    "wind_speed_ms",
+    "is_female"
+  ],
+  "featureLabels": [
+    "스타트 시간",
+    "얼음 온도",
+    "기온",
+    "습도",
+    "기압",
+    "이슬점",
+    "풍속",
+    "여성 여부"
+  ],
+  "trainN": 119,
+  "trainR2": 0.8107,
+  "trainRMSE": 0.9102,
+  "trainMAE": 0.4525,
+  "cvR2": 0.2013,
+  "cvR2Std": 0.2551,
+  "params": {
+    "learning_rate": 0.05,
+    "max_depth": 5,
+    "min_child_weight": 5,
+    "n_estimators": 100,
+    "reg_lambda": 5.0,
+    "subsample": 0.8
+  }
+}
