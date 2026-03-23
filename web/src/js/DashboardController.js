@@ -394,20 +394,26 @@ class DashboardController {
       ? XGB_MODELS[CURRENT_SPORT] : (typeof XGB_MODELS !== 'undefined' ? XGB_MODELS : null);
     const preModel = sportModels ? sportModels.pre : null;
     if (preModel) {
-      let features;
-      if (preModel.v === 2) {
-        // V2: start_time, height_cm, weight_kg, temp_avg, air_density, dewpoint_c + onehot athlete
-        const dewPoint = PredictionModel.calcDewPoint(inp.airTemp, inp.humidity);
-        const airDensity = PredictionModel.calcAirDensity(inp.airTemp, inp.humidity, inp.pressure);
-        const h = inp.height || 175;
-        const w = inp.weight || 75;
-        features = [inp.startTime, h, w, inp.iceTemp, airDensity, dewPoint];
-      } else {
-        // V1: start_time, temp_avg, air_temp, humidity_pct, pressure_hpa, dewpoint_c, wind_speed_ms, is_female
-        const dewPoint = PredictionModel.calcDewPoint(inp.airTemp, inp.humidity);
-        const isFemale = inp.gender === 'W' ? 1 : 0;
-        features = [inp.startTime, inp.iceTemp, inp.airTemp, inp.humidity, inp.pressure, dewPoint, inp.windSpeed, isFemale];
-      }
+      const dewPoint = PredictionModel.calcDewPoint(inp.airTemp, inp.humidity);
+      const isFemale = inp.gender === 'W' ? 1 : 0;
+      const featureMap = {
+        'start_time': inp.startTime,
+        'temp_avg': inp.iceTemp,
+        'air_temp': inp.airTemp,
+        'humidity_pct': inp.humidity,
+        'pressure_hpa': inp.pressure,
+        'dewpoint_c': dewPoint,
+        'wind_speed_ms': inp.windSpeed,
+        'is_female': isFemale,
+        'height_cm': inp.height || 175,
+        'weight_kg': inp.weight || 75,
+        'bmi': (inp.weight || 75) / ((inp.height || 175) / 100) ** 2,
+        'month': new Date().getMonth() + 1,
+        'day_of_season': Math.round((Date.now() - new Date('2025-10-01').getTime()) / 86400000),
+        'air_density': PredictionModel.calcAirDensity(inp.airTemp, inp.humidity, inp.pressure),
+        'athlete_id_enc': 0,
+      };
+      const features = preModel.f.map(f => featureMap[f] ?? 0);
       xgbPredicted = xgbPredict(preModel, features);
       xgbModel = preModel;
     }
