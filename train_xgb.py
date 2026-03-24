@@ -63,7 +63,7 @@ def prepare_data():
     """데이터 로드 및 전처리 (5구간 빙면온도 포함)"""
     print("▶ Supabase에서 데이터 로드 중...")
     records = fetch_all('skeleton_records',
-        'id,date,session,gender,format,nat,name,run,status,start_time,int1,int2,int3,int4,finish,speed,athlete_id,air_temp,humidity_pct,pressure_hpa,wind_speed_ms,dewpoint_c,ice_temp_est,temp_avg')
+        'id,date,session,gender,format,nat,name,run,status,start_time,int1,int2,int3,int4,finish,speed,athlete_id,air_temp,humidity_pct,pressure_hpa,wind_speed_ms,dewpoint_c,ice_temp_est,temp_avg,is_normal')
     athletes = fetch_all('athletes',
         'athlete_id,name,nat,gender,height_cm,weight_kg,birth_year')
 
@@ -76,8 +76,21 @@ def prepare_data():
 
     print(f"  전체 레코드: {len(df)}건, 선수: {len(ath_df)}명, 빙면온도: {len(ice_df)}일")
 
-    # OK 상태 + finish 있는 것만
-    df = df[df['status'] == 'OK'].copy()
+    # ── 정교한 전처리 파이프라인 (train_pipeline.py 동일) ──
+
+    # 제외 선수 5명
+    DROP_NAMES = ['PARK Yewoon', 'TORRES QUEVEDO Ana', 'RODRIGUEZ Adrian',
+                  'JEONG Yeyeon', 'LEE Seunghoon']
+    df = df[~df['name'].isin(DROP_NAMES)].copy()
+
+    # TAKAHASHI Hiroatsu 국적 통일
+    df.loc[df['name'] == 'TAKAHASHI Hiroatsu', 'nat'] = 'JPN'
+
+    # 정상완주 필터링 (is_normal 또는 status=OK)
+    df['is_normal'] = df['is_normal'].astype(str).str.strip().str.lower()
+    valid_flags = ['1', '1.0', 'true', 't', 'y', 'yes']
+    df = df[df['is_normal'].isin(valid_flags)].copy()
+
     df = df.dropna(subset=['finish', 'start_time'])
     df['finish'] = pd.to_numeric(df['finish'], errors='coerce')
     df['start_time'] = pd.to_numeric(df['start_time'], errors='coerce')
@@ -86,12 +99,52 @@ def prepare_data():
                 'wind_speed_ms', 'dewpoint_c', 'ice_temp_est']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
-    # 이상치 제거: finish > 60초 또는 < 45초 (비정상 출발)
-    df = df[(df['finish'] >= 45) & (df['finish'] <= 60)]
-    # start_time 정상 범위: 3~8초
-    df = df[(df['start_time'] >= 3) & (df['start_time'] <= 8)]
+    # finish < 50초 제거 (주니어스타트 이상치)
+    before = len(df)
+    df = df[df['finish'] >= 50.0]
+    print(f"  finish < 50초 제거: {before - len(df)}건")
 
-    print(f"  필터링 후: {len(df)}건")
+    # start_time < 4.5초 제거
+    before = len(df)
+    df = df[df['start_time'] >= 4.5]
+    print(f"  start < 4.5초 제거: {before - len(df)}건")
+
+    # 선수별 최고 start_time + 0.6초 초과 제거
+    start_best = df.groupby('name')['start_time'].min().rename('start_best')
+    df = df.join(start_best, on='name')
+    before = len(df)
+    df = df[df['start_time'] <= df['start_best'] + 0.6].copy()
+    df.drop(columns=['start_best'], inplace=True)
+    print(f"  start +0.6초 초과 제거: {before - len(df)}건")
+
+    # 선수별 평균 speed - 5km/h 미만 제거
+    speed_mean = df.groupby('name')['speed'].mean().rename('speed_mean')
+    df = df.join(speed_mean, on='name')
+    before = len(df)
+    df = df[df['speed'] >= df['speed_mean'] - 5].copy()
+    df.drop(columns=['speed_mean'], inplace=True)
+    print(f"  speed 평균-5 미만 제거: {before - len(df)}건")
+
+    # finish 상한선 (정장환 54.5초, 송영민 54.5초)
+    FINISH_CAP = {'JUNG Janghwan': 54.5, 'SONG Youngmin': 54.5}
+    for player, cap in FINISH_CAP.items():
+        before = len(df)
+        df = df[~((df['name'] == player) & (df['finish'] > cap))]
+        removed = before - len(df)
+        if removed > 0:
+            print(f"  {player} finish > {cap}초 제거: {removed}건")
+
+    # 유지 선수 외 athlete_id → NULL
+    KEEP_IDS = {
+        'ATH-81CCC6D3','ATH-CCB3D4AE','ATH-16B2F494','ATH-91E60E21','ATH-8A0E894D','ATH-075364AA',
+        'ATH-F6E5D0C9','ATH-E68E8959','ATH-B78B10F1','ATH-56A76FCD','ATH-54955BB9','ATH-15459358',
+        'ATH-830BBF37','ATH-80A2ED01','ATH-E141DBED','ATH-5BF779CF','ATH-DE295AEB','ATH-0A5C0017',
+        'ATH-1A4821B0','ATH-DAD23CF0','ATH-51778208','ATH-0926CF11','ATH-F8836987',
+    }
+    null_count = (~df['athlete_id'].isin(KEEP_IDS)).sum()
+    df.loc[~df['athlete_id'].isin(KEEP_IDS), 'athlete_id'] = None
+    print(f"  athlete_id NULL 처리: {null_count}건")
+    print(f"  전처리 후: {len(df)}건")
 
     # 성별 인코딩
     df['is_female'] = (df['gender'] == 'W').astype(int)
