@@ -64,20 +64,7 @@ SKEL_DROP_NAMES = [
     'PARK Yewoon', 'TORRES QUEVEDO Ana', 'RODRIGUEZ Adrian',
     'JEONG Yeyeon', 'LEE Seunghoon'
 ]
-SKEL_KEEP_ATHLETE_IDS = {
-    'YEO Chanhyuk':'ATH-81CCC6D3', 'HONG Sujung':'ATH-CCB3D4AE',
-    'KIM Yerim':'ATH-16B2F494', 'SHIN Yeonsu':'ATH-91E60E21',
-    'CHUNG Yeeun':'ATH-8A0E894D', 'KIM Minji':'ATH-075364AA',
-    'KWACK Eunwoo':'ATH-F6E5D0C9', 'AN Jaewoong':'ATH-E68E8959',
-    'KIM Jisoo':'ATH-B78B10F1', 'JUNG Seunggi':'ATH-56A76FCD',
-    'JUNG Janghwan':'ATH-54955BB9', 'SONG Youngmin':'ATH-15459358',
-    'TAKAHASHI Hiroatsu':'ATH-830BBF37', 'NAGAO Taido':'ATH-80A2ED01',
-    'TIMMINGS Nicholas':'ATH-E141DBED', 'UHLAENDER Katie':'ATH-5BF779CF',
-    'KAWANO Hayato':'ATH-DE295AEB', 'PENG Lin-Wei':'ATH-0A5C0017',
-    'BOSTOCK Laurence':'ATH-1A4821B0', 'DELKA Kellie':'ATH-DAD23CF0',
-    'ZHU Yangqi':'ATH-51778208', 'VARGAS Laura':'ATH-0926CF11',
-    'FREELING Colin':'ATH-F8836987',
-}
+# athlete_id 유지 선수는 athletes 테이블에서 동적으로 결정 (DROP 제외 + 주행 5건 이상)
 
 def preprocess(df_raw, df_ath):
     df = df_raw.copy()
@@ -112,8 +99,12 @@ def preprocess(df_raw, df_ath):
     # finish 상한 (정장환/송영민)
     for name, cap in [('JUNG Janghwan', 54.5), ('SONG Youngmin', 54.5)]:
         df = df[~((df['name'] == name) & (df['finish'] > cap))]
-    # athlete_id NULL 처리 (유지 선수 외)
-    keep_ids = set(SKEL_KEEP_ATHLETE_IDS.values())
+    # athlete_id NULL 처리 (athletes 테이블에서 동적 결정, DROP 제외 + 주행 5건 이상)
+    all_ids = set(df_ath['athlete_id'].dropna())
+    drop_ids = set(df_ath.loc[df_ath['name'].isin(SKEL_DROP_NAMES), 'athlete_id'].dropna())
+    run_counts = df['athlete_id'].value_counts()
+    low_data = set(run_counts[run_counts < 5].index)
+    keep_ids = all_ids - drop_ids - low_data
     df.loc[~df['athlete_id'].isin(keep_ids), 'athlete_id'] = None
     # 구간별 빙면 온도 매핑
     for zone in ['ice_zone1', 'ice_zone2', 'ice_zone3', 'ice_zone4', 'ice_zone5']:

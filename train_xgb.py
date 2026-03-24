@@ -134,16 +134,17 @@ def prepare_data():
         if removed > 0:
             print(f"  {player} finish > {cap}초 제거: {removed}건")
 
-    # 유지 선수 외 athlete_id → NULL
-    KEEP_IDS = {
-        'ATH-81CCC6D3','ATH-CCB3D4AE','ATH-16B2F494','ATH-91E60E21','ATH-8A0E894D','ATH-075364AA',
-        'ATH-F6E5D0C9','ATH-E68E8959','ATH-B78B10F1','ATH-56A76FCD','ATH-54955BB9','ATH-15459358',
-        'ATH-830BBF37','ATH-80A2ED01','ATH-E141DBED','ATH-5BF779CF','ATH-DE295AEB','ATH-0A5C0017',
-        'ATH-1A4821B0','ATH-DAD23CF0','ATH-51778208','ATH-0926CF11','ATH-F8836987',
+    # 유지 선수: athletes 테이블에서 동적으로 가져오되, 제외 선수 제거
+    KEEP_IDS = set(ath_df['athlete_id'].dropna()) - {
+        a for a, n in zip(ath_df['athlete_id'], ath_df['name']) if n in DROP_NAMES
     }
-    null_count = (~df['athlete_id'].isin(KEEP_IDS)).sum()
+    # 데이터가 부족한 선수(주행 5건 미만)도 NULL 처리
+    run_counts = df['athlete_id'].value_counts()
+    low_data_ids = set(run_counts[run_counts < 5].index)
+    KEEP_IDS = KEEP_IDS - low_data_ids
+    null_count = df['athlete_id'].notna().sum() - df['athlete_id'].isin(KEEP_IDS).sum()
     df.loc[~df['athlete_id'].isin(KEEP_IDS), 'athlete_id'] = None
-    print(f"  athlete_id NULL 처리: {null_count}건")
+    print(f"  athlete_id 유지: {len(KEEP_IDS)}명, NULL 처리: {null_count}건")
     print(f"  전처리 후: {len(df)}건")
 
     # 성별 인코딩

@@ -53,35 +53,8 @@ BOB_DROP_PILOTS = ['배한결', '노윤효', '채병도']
 SKEL_DROP_NAMES = ['PARK Yewoon', 'TORRES QUEVEDO Ana', 'RODRIGUEZ Adrian',
                    'JEONG Yeyeon', 'LEE Seunghoon']
 
-# 스켈레톤: athlete_id 유지할 선수 목록 (이 외 선수는 athlete_id → NULL)
-SKEL_KEEP_ATHLETE_IDS = {
-    # 한국 핵심 선수 10명
-    'YEO Chanhyuk':         'ATH-81CCC6D3',
-    'HONG Sujung':          'ATH-CCB3D4AE',
-    'KIM Yerim':            'ATH-16B2F494',
-    'SHIN Yeonsu':          'ATH-91E60E21',
-    'CHUNG Yeeun':          'ATH-8A0E894D',
-    'KIM Minji':            'ATH-075364AA',
-    'KWACK Eunwoo':         'ATH-F6E5D0C9',
-    'AN Jaewoong':          'ATH-E68E8959',
-    'KIM Jisoo':            'ATH-B78B10F1',
-    'JUNG Seunggi':         'ATH-56A76FCD',
-    # 한국 추가 선수 2명 (finish 54.5초 이하만)
-    'JUNG Janghwan':        'ATH-54955BB9',
-    'SONG Youngmin':        'ATH-15459358',
-    # 외국 선수 12명
-    'TAKAHASHI Hiroatsu':   'ATH-830BBF37',  # KOR→JPN 통일
-    'NAGAO Taido':          'ATH-80A2ED01',
-    'TIMMINGS Nicholas':    'ATH-E141DBED',
-    'UHLAENDER Katie':      'ATH-5BF779CF',
-    'KAWANO Hayato':        'ATH-DE295AEB',
-    'PENG Lin-Wei':         'ATH-0A5C0017',
-    'BOSTOCK Laurence':     'ATH-1A4821B0',
-    'DELKA Kellie':         'ATH-DAD23CF0',
-    'ZHU Yangqi':           'ATH-51778208',
-    'VARGAS Laura':         'ATH-0926CF11',
-    'FREELING Colin':       'ATH-F8836987',
-}
+# 스켈레톤: athlete_id 유지 선수는 athletes 테이블에서 동적으로 결정
+# (DROP_NAMES 제외 + 주행 5건 이상인 선수만 유지, 나머지 → NULL)
 
 # 스켈레톤: finish 상한선 적용할 선수 {이름: 최대 finish}
 SKEL_FINISH_CAP = {
@@ -242,11 +215,17 @@ def preprocess_skeleton(df_skel, df_ath_skel):
     # 8. BMI 파생변수
     df['BMI'] = df['weight_kg'] / ((df['height_cm'] / 100) ** 2)
 
-    # 9. 유지 선수 외 athlete_id → NULL
-    keep_ids = set(SKEL_KEEP_ATHLETE_IDS.values())
-    null_count = (~df['athlete_id'].isin(keep_ids)).sum()
+    # 9. 유지 선수 외 athlete_id → NULL (athletes 테이블에서 동적으로 결정)
+    all_athlete_ids = set(df_ath_skel['athlete_id'].dropna())
+    drop_athlete_ids = set(
+        df_ath_skel.loc[df_ath_skel['name'].isin(SKEL_DROP_NAMES), 'athlete_id'].dropna()
+    )
+    run_counts = df['athlete_id'].value_counts()
+    low_data_ids = set(run_counts[run_counts < 5].index)
+    keep_ids = all_athlete_ids - drop_athlete_ids - low_data_ids
+    null_count = df['athlete_id'].notna().sum() - df['athlete_id'].isin(keep_ids).sum()
     df.loc[~df['athlete_id'].isin(keep_ids), 'athlete_id'] = None
-    print(f'  athlete_id NULL 처리: {null_count}건')
+    print(f'  athlete_id 유지: {len(keep_ids)}명, NULL 처리: {null_count}건')
 
     # 10. 구간별 빙면 온도 매핑 (ice_zone1~5)
     zone_json = os.path.join(SAVE_DIR, 'ice_zone_temps.json')
