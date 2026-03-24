@@ -712,6 +712,39 @@ ABSOLUTE RULES:
 
 
 
+    // ── 키워드 사전 분류 (LLM 호출 없이 빠르게) ──
+    const q = question.toLowerCase();
+    const keywordMap = [
+      { keys: ["서리","결빙","얼음"], funcs: ["frost"] },
+      { keys: ["온도","빙면","트랙 온도","얼음 온도"], funcs: ["temperature"] },
+      { keys: ["습도","습한","건조","비 오"], funcs: ["humidity"] },
+      { keys: ["바람","풍속","돌풍","강풍"], funcs: ["wind"] },
+      { keys: ["커브","코너","번 커브"], funcs: ["curve_detail"] },
+      { keys: ["위험","난이도","어려운 커브","위험한"], funcs: ["curve_ranking"] },
+      { keys: ["구간","세그먼트","어디서 느려","어디서 빨라"], funcs: ["segment"] },
+      { keys: ["스타트","출발","0.1초","줄이면"], funcs: ["start_impact"] },
+      { keys: ["체중","몸무게","체격","bmi"], funcs: ["body_effect"] },
+      { keys: ["피로","지치","후반","런 피로"], funcs: ["run_fatigue"] },
+      { keys: ["일관","안정","편차","꾸준"], funcs: ["consistency"] },
+      { keys: ["추이","추세","성장","발전","요즘"], funcs: ["trend"] },
+      { keys: ["시즌","월별","언제 가장"], funcs: ["time_of_season"] },
+      { keys: ["최적","좋은 조건","베스트 컨디션"], funcs: ["best_condition"] },
+      { keys: ["vs ","비교","대결","맞대결"], funcs: ["head_to_head"] },
+      { keys: ["잘하","제일","최고","1등","누가 가장"], funcs: ["consistency","player_records"] },
+      { keys: ["기술","테크닉","주행 실력"], funcs: ["start_vs_technique"] },
+    ];
+    const preMatched = [];
+    for (const {keys, funcs} of keywordMap) {
+      if (keys.some(k => q.includes(k))) preMatched.push(...funcs);
+    }
+    if (preMatched.length > 0) {
+      const uniqueFuncs = [...new Set(preMatched)].slice(0, 3);
+      const results = await Promise.all(uniqueFuncs.map(fn => this._execInsightFunc(fn, question, baseUrl, h, range, tables)));
+      const valid = results.filter(r => r != null);
+      if (valid.length > 0) return { text: valid.map(r => r.text).join(String.fromCharCode(10,10)) };
+    }
+
+    // ── LLM 분류 (키워드 매칭 실패 시 fallback) ──
     // LLM selects which functions to call
 
     const funcList = Chatbot.INSIGHT_FUNCTIONS.map(f => `${f.name}: ${f.desc}`).join('\n');
