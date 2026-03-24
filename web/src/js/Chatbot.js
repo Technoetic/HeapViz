@@ -2039,6 +2039,28 @@ RULES:
 
 
 
+    // ── Phase 0: 키워드 사전 분류 (intent 분류보다 우선) ──
+    const _q = question.toLowerCase();
+    const _kwMap = [
+      { keys: ['잘하','제일','최고','1등','누가 가장'], func: 'consistency' },
+      { keys: ['서리','결빙'], func: 'frost' },
+      { keys: ['습도','습한','건조','비 오'], func: 'humidity' },
+      { keys: ['바람','풍속','돌풍'], func: 'wind' },
+      { keys: ['체중','몸무게','체격'], func: 'body_effect' },
+      { keys: ['피로','지치','후반'], func: 'run_fatigue' },
+      { keys: ['추이','추세','성장','요즘'], func: 'trend' },
+    ];
+    for (const {keys, func} of _kwMap) {
+      if (keys.some(k => _q.includes(k))) {
+        const _h = { 'apikey': Chatbot.SUPABASE_KEY, 'Authorization': 'Bearer ' + Chatbot.SUPABASE_KEY };
+        const _baseUrl = Chatbot.SUPABASE_URL + '/rest/v1/' + tables.records;
+        const _range = this.sport === 'skeleton' ? [50, 60] : [45, 65];
+        const _r = await this._execInsightFunc(func, question, _baseUrl, _h, _range, tables);
+        if (_r && _r.text) return _r;
+      }
+    }
+
+
     // Insight shortcut: detect analytical questions → direct DB computation (no LLM SQL)
 
     const insight = await this._detectInsight(question, tables);
@@ -2078,27 +2100,6 @@ RULES:
     }
 
 
-
-    // ── Phase 0: 키워드 사전 분류 (intent 분류보다 우선) ──
-    const _q = question.toLowerCase();
-    const _kwMap = [
-      { keys: ['잘하','제일','최고','1등','누가 가장'], func: 'consistency' },
-      { keys: ['서리','결빙'], func: 'frost' },
-      { keys: ['습도','습한','건조','비 오'], func: 'humidity' },
-      { keys: ['바람','풍속','돌풍'], func: 'wind' },
-      { keys: ['체중','몸무게','체격'], func: 'body_effect' },
-      { keys: ['피로','지치','후반'], func: 'run_fatigue' },
-      { keys: ['추이','추세','성장','요즘'], func: 'trend' },
-    ];
-    for (const {keys, func} of _kwMap) {
-      if (keys.some(k => _q.includes(k))) {
-        const _h = { 'apikey': Chatbot.SUPABASE_KEY, 'Authorization': 'Bearer ' + Chatbot.SUPABASE_KEY };
-        const _baseUrl = Chatbot.SUPABASE_URL + '/rest/v1/' + tables.records;
-        const _range = this.sport === 'skeleton' ? [50, 60] : [45, 65];
-        const _r = await this._execInsightFunc(func, question, _baseUrl, _h, _range, tables);
-        if (_r && _r.text) return _r;
-      }
-    }
 
     // ── Phase 1: Intent + SQL generation (4 calls parallel) ──
 
