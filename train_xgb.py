@@ -8,6 +8,10 @@ XGBoost 스켈레톤 예측 모델 재학습 스크립트 v3.0
 - JS 추론용 모델 파일 생성
 """
 
+import sys
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
+
 import json
 import math
 import os
@@ -29,13 +33,13 @@ HEADERS = {
 }
 
 
-def fetch_all(table, select='*'):
+def fetch_all(table, select='*', order='id'):
     """Supabase에서 페이지네이션으로 전체 데이터 가져오기"""
     rows = []
     limit = 1000
     offset = 0
     while True:
-        url = f"{SUPABASE_URL}/rest/v1/{table}?select={select}&order=id&offset={offset}&limit={limit}"
+        url = f"{SUPABASE_URL}/rest/v1/{table}?select={select}&order={order}&offset={offset}&limit={limit}"
         resp = requests.get(url, headers=HEADERS)
         resp.raise_for_status()
         batch = resp.json()
@@ -64,7 +68,7 @@ def prepare_data():
         'athlete_id,name,nat,gender,height_cm,weight_kg,birth_year')
 
     # 5구간 빙면온도 로드
-    ice_zones_raw = fetch_all('ice_zone_temps', 'date,ice_zone1,ice_zone2,ice_zone3,ice_zone4,ice_zone5')
+    ice_zones_raw = fetch_all('ice_zone_temps', 'date,ice_zone1,ice_zone2,ice_zone3,ice_zone4,ice_zone5', order='date')
     ice_df = pd.DataFrame(ice_zones_raw)
 
     df = pd.DataFrame(records)
