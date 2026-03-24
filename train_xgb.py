@@ -1,18 +1,22 @@
 """
-XGBoost 스켈레톤 예측 모델 재학습 스크립트
-- Supabase에서 skeleton_records + athletes 데이터 가져오기
-- 하이퍼파라미터 튜닝 (과적합 방지)
-- 선수 ID 변수 중요도 점검
+XGBoost 스켈레톤 예측 모델 재학습 스크립트 v3.0
+- Supabase에서 skeleton_records + athletes + ice_zone_temps 가져오기
+- 5구간 빙면온도(ice_zone1~5) 적용 (44개 센서 데이터 기반)
+- SHAP 변수 중요도 분석 (XAI)
+- 시계열 교차검증 (TimeSeriesSplit)
+- 변수 제거 실험 (Ablation Study)
 - JS 추론용 모델 파일 생성
 """
 
 import json
 import math
+import os
 import requests
 import numpy as np
 import pandas as pd
+import shap
 from xgboost import XGBRegressor
-from sklearn.model_selection import cross_val_score, GridSearchCV, KFold
+from sklearn.model_selection import cross_val_score, GridSearchCV, KFold, TimeSeriesSplit
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 
 # ── Supabase 설정 ──
@@ -52,17 +56,21 @@ def calc_dewpoint(t, rh):
 
 
 def prepare_data():
-    """데이터 로드 및 전처리"""
+    """데이터 로드 및 전처리 (5구간 빙면온도 포함)"""
     print("▶ Supabase에서 데이터 로드 중...")
     records = fetch_all('skeleton_records',
         'id,date,session,gender,format,nat,name,run,status,start_time,int1,int2,int3,int4,finish,speed,athlete_id,air_temp,humidity_pct,pressure_hpa,wind_speed_ms,dewpoint_c,ice_temp_est,temp_avg')
     athletes = fetch_all('athletes',
         'athlete_id,name,nat,gender,height_cm,weight_kg,birth_year')
 
+    # 5구간 빙면온도 로드
+    ice_zones_raw = fetch_all('ice_zone_temps', 'date,ice_zone1,ice_zone2,ice_zone3,ice_zone4,ice_zone5')
+    ice_df = pd.DataFrame(ice_zones_raw)
+
     df = pd.DataFrame(records)
     ath_df = pd.DataFrame(athletes)
 
-    print(f"  전체 레코드: {len(df)}건, 선수: {len(ath_df)}명")
+    print(f"  전체 레코드: {len(df)}건, 선수: {len(ath_df)}명, 빙면온도: {len(ice_df)}일")
 
     # OK 상태 + finish 있는 것만
     df = df[df['status'] == 'OK'].copy()
@@ -89,6 +97,19 @@ def prepare_data():
         ath_merge = ath_df[['athlete_id', 'height_cm', 'weight_kg']].copy()
         df = df.merge(ath_merge, on='athlete_id', how='left')
 
+    # 5구간 빙면온도 매핑
+    if len(ice_df) > 0:
+        for zone in ['ice_zone1', 'ice_zone2', 'ice_zone3', 'ice_zone4', 'ice_zone5']:
+            ice_df[zone] = pd.to_numeric(ice_df[zone], errors='coerce')
+        zone_map = ice_df.set_index('date')
+        for zone in ['ice_zone1', 'ice_zone2', 'ice_zone3', 'ice_zone4', 'ice_zone5']:
+            df[zone] = df['date'].map(zone_map[zone].to_dict())
+            # fallback: zone 없으면 temp_avg
+            mask = df[zone].isna() & df['temp_avg'].notna()
+            df.loc[mask, zone] = df.loc[mask, 'temp_avg']
+        zone_valid = df['ice_zone1'].notna().sum()
+        print(f"  5구간 빙면온도 매핑: {zone_valid}건 유효")
+
     # 파생 변수
     df['bmi'] = df['weight_kg'] / (df['height_cm']/100)**2
     df['month'] = pd.to_datetime(df['date']).dt.month
@@ -100,6 +121,9 @@ def prepare_data():
         return ((p - pv) * 100 / (287.05 * (t+273.15))) + (pv * 100 / (461.495 * (t+273.15)))
     df['air_density'] = df.apply(lambda r: _ad(r.get('air_temp'), r.get('pressure_hpa'), r.get('humidity_pct')), axis=1)
 
+    # 날짜순 정렬 (시계열 CV용)
+    df = df.sort_values('date').reset_index(drop=True)
+
     return df, ath_df
 
 
@@ -109,15 +133,18 @@ def train_pre_model(df):
     print("▶ Pre-race XGBoost 모델 학습")
     print("="*60)
 
-    # 피처 정의: 이전 모델과 동일한 구조
-    # temp_avg = 실측 트랙 얼음 온도 (PDF에서 추출)
-    feature_cols = ['start_time', 'temp_avg', 'air_temp', 'humidity_pct',
-                    'pressure_hpa', 'dewpoint_c', 'wind_speed_ms', 'is_female',
-                    'height_cm', 'weight_kg', 'bmi', 'month', 'day_of_season', 'air_density']
+    # 피처 정의 v3: 5구간 빙면온도(ice_zone1~5) 적용
+    feature_cols = ['start_time', 'ice_zone1', 'ice_zone2', 'ice_zone3', 'ice_zone4', 'ice_zone5',
+                    'air_temp', 'humidity_pct', 'pressure_hpa', 'dewpoint_c', 'wind_speed_ms',
+                    'is_female', 'height_cm', 'weight_kg', 'bmi', 'month', 'day_of_season', 'air_density']
 
     feature_labels = {
         'start_time': '스타트 시간',
-        'temp_avg': '얼음 온도',
+        'ice_zone1': '빙면온도 Z1 (Start→Int.1)',
+        'ice_zone2': '빙면온도 Z2 (Int.1→Int.2)',
+        'ice_zone3': '빙면온도 Z3 (Int.2→Int.3)',
+        'ice_zone4': '빙면온도 Z4 (Int.3→Int.4)',
+        'ice_zone5': '빙면온도 Z5 (Int.4→Finish)',
         'air_temp': '기온',
         'humidity_pct': '습도',
         'pressure_hpa': '현지기압',
@@ -456,6 +483,103 @@ def export_js(pre_model, pre_cols, pre_labels, pre_imp, pre_stats, pre_id_map,
     return pre_stats, live_stats
 
 
+def run_shap_analysis(model, X, feature_cols, feature_labels):
+    """SHAP 변수 중요도 분석 (XAI)"""
+    print("\n" + "="*60)
+    print("▶ SHAP 변수 중요도 분석 (Explainable AI)")
+    print("="*60)
+
+    explainer = shap.TreeExplainer(model)
+    shap_values = explainer.shap_values(X)
+    mean_abs_shap = np.abs(shap_values).mean(axis=0)
+
+    shap_result = dict(zip(feature_cols, mean_abs_shap))
+    print("\n  변수별 평균 |SHAP| 값:")
+    for feat, val in sorted(shap_result.items(), key=lambda x: -x[1]):
+        label = feature_labels.get(feat, feat)
+        bar = '█' * int(val / max(mean_abs_shap) * 25)
+        print(f"    {label:<28s} {val:.4f}  {bar}")
+
+    return shap_result
+
+
+def run_timeseries_cv(df, feature_cols, n_splits=5):
+    """시계열 교차검증 (TimeSeriesSplit) - 데이터 누수 방지"""
+    print("\n" + "="*60)
+    print(f"▶ 시계열 교차검증 (TimeSeriesSplit, n_splits={n_splits})")
+    print("="*60)
+
+    work = df.dropna(subset=feature_cols + ['finish']).copy()
+    work = work.sort_values('date').reset_index(drop=True)
+    X = work[feature_cols].values
+    y = work['finish'].values
+
+    tscv = TimeSeriesSplit(n_splits=n_splits)
+    r2_scores, rmse_scores = [], []
+
+    for fold, (train_idx, test_idx) in enumerate(tscv.split(X)):
+        model = XGBRegressor(
+            max_depth=4, learning_rate=0.05, n_estimators=500,
+            min_child_weight=10, subsample=0.8, colsample_bytree=0.7,
+            reg_alpha=0.5, reg_lambda=1.0, random_state=42, verbosity=0
+        )
+        model.fit(X[train_idx], y[train_idx])
+        y_pred = model.predict(X[test_idx])
+        r2 = r2_score(y[test_idx], y_pred)
+        rmse = mean_squared_error(y[test_idx], y_pred) ** 0.5
+        r2_scores.append(r2)
+        rmse_scores.append(rmse)
+        print(f"  Fold {fold+1} | train={len(train_idx):4d} test={len(test_idx):3d} | "
+              f"R²={r2*100:6.2f}%  RMSE={rmse:.4f}s")
+
+    print(f"  → 평균 R²={np.mean(r2_scores)*100:.2f}% ± {np.std(r2_scores)*100:.2f}%  "
+          f"RMSE={np.mean(rmse_scores):.4f}s ± {np.std(rmse_scores):.4f}s")
+
+    return {
+        'r2_mean': np.mean(r2_scores), 'r2_std': np.std(r2_scores),
+        'rmse_mean': np.mean(rmse_scores), 'rmse_std': np.std(rmse_scores),
+        'fold_r2s': r2_scores,
+    }
+
+
+def run_ablation_study(df, feature_cols, feature_labels):
+    """변수 제거 실험 (Ablation Study)"""
+    print("\n" + "="*60)
+    print("▶ 변수 제거 실험 (Ablation Study)")
+    print("="*60)
+
+    work = df.dropna(subset=feature_cols + ['finish']).copy()
+    work = work.sort_values('date').reset_index(drop=True)
+    X_full = work[feature_cols].values
+    y = work['finish'].values
+
+    tscv = TimeSeriesSplit(n_splits=5)
+
+    def cv_r2(X_in):
+        scores = []
+        for tr, te in tscv.split(X_in):
+            m = XGBRegressor(max_depth=4, learning_rate=0.05, n_estimators=500,
+                             min_child_weight=10, subsample=0.8, random_state=42, verbosity=0)
+            m.fit(X_in[tr], y[tr])
+            scores.append(r2_score(y[te], m.predict(X_in[te])))
+        return np.mean(scores)
+
+    base_r2 = cv_r2(X_full)
+    print(f"  기준선 ({len(feature_cols)}개 변수): R²={base_r2*100:.2f}%\n")
+
+    ablation = {}
+    for i, feat in enumerate(feature_cols):
+        X_reduced = np.delete(X_full, i, axis=1)
+        abl_r2 = cv_r2(X_reduced)
+        drop = (base_r2 - abl_r2) * 100
+        ablation[feat] = {'r2': abl_r2, 'drop': drop}
+        label = feature_labels.get(feat, feat)
+        direction = '▼' if drop > 0 else '▲'
+        print(f"  - {label:<28s} 제거 시 R²={abl_r2*100:.2f}%  ({direction}{abs(drop):.2f}%p)")
+
+    return ablation
+
+
 def main():
     df, ath_df = prepare_data()
 
@@ -469,22 +593,35 @@ def main():
     export_js(pre_model, pre_cols, pre_labels, pre_imp, pre_stats, pre_id_map,
               live_model, live_cols, live_labels, live_imp, live_stats)
 
+    # ── XAI 분석 (Pre-race 모델) ──
+    work = df.dropna(subset=pre_cols + ['finish']).copy()
+    X_shap = work[pre_cols].values
+    shap_result = run_shap_analysis(pre_model, X_shap, pre_cols, pre_labels)
+    ts_cv_result = run_timeseries_cv(df, pre_cols)
+    ablation_result = run_ablation_study(df, pre_cols, pre_labels)
+
     # ── 최종 비교 ──
     print("\n" + "="*60)
     print("▶ 이전 모델 vs 새 모델 비교")
     print("="*60)
-    print(f"  {'':20s} {'이전':>10s} {'새 모델':>10s}")
-    print(f"  {'─'*42}")
-    print(f"  {'Pre-race Train R²':20s} {'0.7574':>10s} {pre_stats['train_r2']:>10.4f}")
-    print(f"  {'Pre-race CV R²':20s} {'0.5965':>10s} {pre_stats['cv_r2']:>10.4f}")
-    print(f"  {'Pre-race RMSE':20s} {'0.7508':>10s} {pre_stats['rmse']:>10.4f}")
-    print(f"  {'Pre-race MAE':20s} {'0.5312':>10s} {pre_stats['mae']:>10.4f}")
-    print(f"  {'과적합 갭':20s} {'0.1609':>10s} {pre_stats['train_r2']-pre_stats['cv_r2']:>10.4f}")
-    print(f"  {'─'*42}")
-    print(f"  {'Live Train R²':20s} {'0.9989':>10s} {live_stats['train_r2']:>10.4f}")
-    print(f"  {'Live CV R²':20s} {'0.9727':>10s} {live_stats['cv_r2']:>10.4f}")
+    print(f"  {'':28s} {'이전':>10s} {'v3.0':>10s}")
+    print(f"  {'─'*50}")
+    print(f"  {'Pre-race Train R²':28s} {'0.7574':>10s} {pre_stats['train_r2']:>10.4f}")
+    print(f"  {'Pre-race CV R² (KFold)':28s} {'0.5965':>10s} {pre_stats['cv_r2']:>10.4f}")
+    print(f"  {'Pre-race CV R² (TimeSeries)':28s} {'N/A':>10s} {ts_cv_result['r2_mean']:>10.4f}")
+    print(f"  {'Pre-race RMSE':28s} {'0.7508':>10s} {pre_stats['rmse']:>10.4f}")
+    print(f"  {'과적합 갭':28s} {'0.1609':>10s} {pre_stats['train_r2']-pre_stats['cv_r2']:>10.4f}")
+    print(f"  {'─'*50}")
+    print(f"  {'Live Train R²':28s} {'0.9989':>10s} {live_stats['train_r2']:>10.4f}")
+    print(f"  {'Live CV R²':28s} {'0.9727':>10s} {live_stats['cv_r2']:>10.4f}")
+
+    # SHAP TOP 5
+    print(f"\n▶ SHAP 변수 중요도 TOP 5:")
+    for i, (feat, val) in enumerate(sorted(shap_result.items(), key=lambda x: -x[1])[:5], 1):
+        print(f"  {i}. {pre_labels.get(feat, feat)}: {val:.4f}")
+
     print()
-    print("✅ 완료!")
+    print("✅ v3.0 완료! (5구간 빙면온도 + SHAP + 시계열 CV + Ablation)")
 
 
 if __name__ == '__main__':
