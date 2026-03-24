@@ -730,7 +730,7 @@ ABSOLUTE RULES:
       { keys: ["시즌","월별","언제 가장"], funcs: ["time_of_season"] },
       { keys: ["최적","좋은 조건","베스트 컨디션"], funcs: ["best_condition"] },
       { keys: ["vs ","비교","대결","맞대결"], funcs: ["head_to_head"] },
-      { keys: ["잘하","제일","최고","1등","누가 가장"], funcs: ["consistency","player_records"] },
+      { keys: ["잘하","제일","최고","1등","누가 가장"], funcs: ["consistency"] },
       { keys: ["기술","테크닉","주행 실력"], funcs: ["start_vs_technique"] },
     ];
     const preMatched = [];
