@@ -1,0 +1,161 @@
+/* ==========================================================================
+   Binary Search Tutorial — style.css
+   Awwwards-inspired: bruno-simon (dark neon grid) + cassie.codes (color
+   blocks) + strml.net (minimal code panel + bottom controls)
+   UTF-8, LF line endings
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. CSS Custom Properties
+   -------------------------------------------------------------------------- */
+
+:root {
+	/* --- Typography --- */
+	--font-sans:
+		-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+		Arial, sans-serif;
+	--font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+
+	/* --- Easing --- */
+	--easing-smooth: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+	--easing-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+	--easing-sharp: cubic-bezier(0.4, 0, 0.2, 1);
+
+	/* --- Z-index scale --- */
+	--z-header: 100;
+	--z-footer: 100;
+	--z-overlay: 200;
+
+	/* --- Layout constants --- */
+	--header-height: 64px;
+	--footer-height: 64px;
+	--content-max-w: 1440px;
+	--section-pad-x: 40px;
+	--section-pad-y: 32px;
+}
+
+/* Dark mode — default (bruno-simon inspired) */
+:root,
+[data-theme="dark"] {
+	/* Backgrounds */
+	--bg-base: #0d0d14;
+	--bg-surface: #161222;
+	--bg-code: #0d1117;
+	--bg-overlay: rgba(13, 13, 20, 0.85);
+
+	/* Text */
+	--text-primary: rgba(255, 255, 255, 0.9);
+	--text-secondary: rgba(255, 255, 255, 0.55);
+	--text-muted: rgba(255, 255, 255, 0.3);
+
+	/* Grid / borders (purple neon grid from bruno-simon) */
+	--color-grid: #7b3fa0;
+	--color-grid-subtle: rgba(123, 63, 160, 0.25);
+	--color-border: #3a3a4a;
+
+	/* Accent */
+	--color-accent: #88ccff;
+	--color-accent-glow: #4488ee;
+	--color-success: #4fc878;
+	--color-error: #f85149;
+
+	/* Bar states */
+	--bar-inactive: #2a2a3a;
+	--bar-in-range: #7b3fa0;
+	--bar-active: #88ccff; /* mid bar */
+	--bar-found: #4fc878;
+	--bar-eliminated: rgba(255, 255, 255, 0.08);
+	--bar-mid-glow: 0 0 12px #88ccff, 0 0 28px #4488ee;
+	--bar-found-glow: 0 0 14px #4fc878, 0 0 28px rgba(79, 200, 120, 0.4);
+
+	/* Pointer colors */
+	--ptr-low: #f78166;
+	--ptr-high: #79c0ff;
+	--ptr-mid: #88ccff;
+
+	/* Code panel */
+	--code-bg: #0d1117;
+	--code-line-active: #1e293b;
+	--code-border: #7b3fa0;
+	--code-text: #e0e0ff;
+	--code-line-num: rgba(255, 255, 255, 0.3);
+
+	/* Quiz */
+	--quiz-correct-bg: rgba(79, 200, 120, 0.15);
+	--quiz-correct-border: #4fc878;
+	--quiz-wrong-bg: rgba(248, 81, 73, 0.15);
+	--quiz-wrong-border: #f85149;
+
+	/* Shadows */
+	--shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
+	--shadow-md: 0 4px 20px rgba(0, 0, 0, 0.5);
+	--shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.6);
+	--shadow-neon: 0 0 20px rgba(136, 204, 255, 0.15);
+
+	/* Scrollbar */
+	--scrollbar-track: #1a1a2a;
+	--scrollbar-thumb: #3a3a5a;
+}
+
+/* Light mode (cassie.codes inspired: pastel blocks, clean cards) */
+[data-theme="light"] {
+	/* Backgrounds */
+	--bg-base: #f8f9fa;
+	--bg-surface: #ffffff;
+	--bg-code: #f6f8fa;
+	--bg-overlay: rgba(248, 249, 250, 0.9);
+
+	/* Text */
+	--text-primary: #1a1a2e;
+	--text-secondary: #6b7280;
+	--text-muted: #9ca3af;
+
+	/* Grid / borders */
+	--color-grid: #e0d0f0;
+	--color-grid-subtle: rgba(201, 184, 232, 0.3);
+	--color-border: #e5e7eb;
+
+	/* Accent */
+	--color-accent: #3b82f6;
+	--color-accent-glow: #2563eb;
+	--color-success: #22c55e;
+	--color-error: #ef4444;
+
+	/* Bar states */
+	--bar-inactive: #d1d5db;
+	--bar-in-range: #c9b8e8;
+	--bar-active: #3b82f6;
+	--bar-found: #22c55e;
+	--bar-eliminated: #e5e7eb;
+	--bar-mid-glow:
+		0 0 8px rgba(59, 130, 246, 0.4), 0 0 16px rgba(59, 130, 246, 0.2);
+	--bar-found-glow: 0 0 8px rgba(34, 197, 94, 0.4);
+
+	/* Pointer colors */
+	--ptr-low: #ef4444;
+	--ptr-high: #3b82f6;
+	--ptr-mid: #2563eb;
+
+	/* Code panel */
+	--code-bg: #f6f8fa;
+	--code-line-active: #eff6ff;
+	--code-border: #c9b8e8;
+	--code-text: #1e293b;
+	--code-line-num: #9ca3af;
+
+	/* Quiz */
+	--quiz-correct-bg: rgba(34, 197, 94, 0.1);
+	--quiz-correct-border: #22c55e;
+	--quiz-wrong-bg: rgba(239, 68, 68, 0.1);
+	--quiz-wrong-border: #ef4444;
+
+	/* Shadows */
+	--shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+	--shadow-md: 0 4px 20px rgba(0, 0, 0, 0.12);
+	--shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.16);
+	--shadow-neon: 0 0 20px rgba(59, 130, 246, 0.1);
+
+	/* Scrollbar */
+	--scrollbar-track: #f1f1f1;
+	--scrollbar-thumb: #c1c1c1;
+}

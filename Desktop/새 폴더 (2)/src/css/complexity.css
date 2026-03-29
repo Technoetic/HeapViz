@@ -1,0 +1,169 @@
+/* --------------------------------------------------------------------------
+   10. Complexity Section
+   -------------------------------------------------------------------------- */
+
+.complexity-comparison {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 16px;
+	margin-bottom: 24px;
+}
+
+.complexity-chart {
+	background-color: var(--bg-surface);
+	border: 1px solid var(--color-grid);
+	border-radius: 12px;
+	padding: 20px;
+	box-shadow: var(--shadow-sm);
+}
+
+.chart-title {
+	font-size: 14px;
+	font-weight: 700;
+	margin-bottom: 14px;
+	color: var(--text-primary);
+	font-family: var(--font-mono);
+}
+
+.chart-bar-container {
+	display: flex;
+	align-items: flex-end;
+	justify-content: center;
+	gap: 8px;
+	height: 140px;
+}
+
+.chart-bar {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+}
+
+.chart-bar-item {
+	width: 36px;
+	background: linear-gradient(
+		to top,
+		var(--color-accent),
+		var(--color-accent-glow)
+	);
+	border-radius: 4px 4px 0 0;
+	transition: height 0.5s var(--easing-smooth);
+}
+
+[data-theme="dark"] .chart-bar-item {
+	box-shadow: 0 0 10px rgba(136, 204, 255, 0.3);
+}
+
+.chart-bar-item.secondary {
+	background: linear-gradient(to top, var(--bar-in-range), var(--color-grid));
+}
+
+.chart-bar-label {
+	font-size: 11px;
+	color: var(--text-secondary);
+	white-space: nowrap;
+	font-family: var(--font-mono);
+}
+
+/* Complexity table */
+.complexity-table {
+	width: 100%;
+	border-collapse: collapse;
+	background-color: var(--bg-surface);
+	border: 1px solid var(--color-grid);
+	border-radius: 12px;
+	overflow: hidden;
+	margin-bottom: 24px;
+	box-shadow: var(--shadow-sm);
+}
+
+.complexity-table th,
+.complexity-table td {
+	padding: 12px 16px;
+	text-align: left;
+	border-bottom: 1px solid var(--color-border);
+	font-size: 14px;
+}
+
+.complexity-table th {
+	background-color: var(--bg-code);
+	font-weight: 700;
+	color: var(--text-primary);
+	font-size: 13px;
+	letter-spacing: 0.3px;
+	text-transform: uppercase;
+}
+
+.complexity-table td {
+	color: var(--text-secondary);
+}
+
+.complexity-table td:first-child {
+	color: var(--text-primary);
+	font-weight: 500;
+}
+
+.complexity-table tr:last-child td {
+	border-bottom: none;
+}
+
+.complexity-table tr:hover td {
+	background-color: var(--color-grid-subtle);
+}
+
+/* O-notation highlight */
+.o-notation {
+	font-family: var(--font-mono);
+	color: var(--color-accent);
+	font-weight: 600;
+}
+
+[data-theme="dark"] .o-notation {
+	text-shadow: 0 0 8px rgba(136, 204, 255, 0.4);
+}
+
+/* Use cases box */
+.use-cases {
+	background-color: var(--bg-surface);
+	border: 1px solid var(--color-grid);
+	border-radius: 12px;
+	padding: 20px;
+	margin-top: 24px;
+	box-shadow: var(--shadow-sm);
+}
+
+.use-cases h3 {
+	font-size: 15px;
+	font-weight: 700;
+	margin-bottom: 14px;
+	color: var(--text-primary);
+}
+
+.use-cases ul {
+	list-style: none;
+	padding: 0;
+}
+
+.use-cases li {
+	padding: 10px 0;
+	color: var(--text-secondary);
+	border-bottom: 1px solid var(--color-border);
+	font-size: 14px;
+	line-height: 1.5;
+	transition: color 0.2s var(--easing-smooth);
+}
+
+.use-cases li:hover {
+	color: var(--text-primary);
+}
+
+.use-cases li:last-child {
+	border-bottom: none;
+}
+
+.use-cases li::before {
+	content: "→ ";
+	color: var(--color-accent);
+	font-family: var(--font-mono);
+}

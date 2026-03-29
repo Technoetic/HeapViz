@@ -1,0 +1,140 @@
+/* --------------------------------------------------------------------------
+   3. Header (.top-bar / header)
+   -------------------------------------------------------------------------- */
+
+header {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: var(--header-height);
+	z-index: var(--z-header);
+
+	background-color: var(--bg-surface);
+	border-bottom: 1px solid var(--color-grid);
+	backdrop-filter: blur(8px);
+	-webkit-backdrop-filter: blur(8px);
+
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0 var(--section-pad-x);
+	gap: 16px;
+
+	transition:
+		background-color 0.3s var(--easing-smooth),
+		border-color 0.3s var(--easing-smooth);
+}
+
+/* Neon bottom glow on header — bruno-simon effect */
+header {
+	box-shadow: 0 1px 20px rgba(123, 63, 160, 0.3);
+}
+
+[data-theme="dark"] header {
+	box-shadow:
+		0 1px 0 var(--color-grid),
+		0 1px 20px rgba(123, 63, 160, 0.3),
+		0 2px 40px rgba(123, 63, 160, 0.15);
+}
+
+[data-theme="light"] header {
+	box-shadow: var(--shadow-sm);
+}
+
+header h1 {
+	font-size: 20px;
+	font-weight: 700;
+	letter-spacing: -0.3px;
+	white-space: nowrap;
+	color: var(--text-primary);
+}
+
+[data-theme="dark"] header h1 {
+	/* Subtle neon text glow — bruno-simon */
+	text-shadow: 0 0 20px rgba(136, 204, 255, 0.3);
+}
+
+/* Step indicator + progress bar */
+.step-indicator {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex: 1;
+	margin: 0 16px;
+	min-width: 0;
+}
+
+.step-text {
+	font-size: 13px;
+	color: var(--text-secondary);
+	white-space: nowrap;
+}
+
+.progress-bar-container {
+	width: 150px;
+	height: 6px;
+	background-color: rgba(123, 63, 160, 0.3);
+	border-radius: 3px;
+	overflow: hidden;
+	flex-shrink: 0;
+}
+
+.progress-bar {
+	height: 100%;
+	background-color: var(--color-accent);
+	width: 20%;
+	border-radius: 3px;
+	transition: width 0.4s var(--easing-smooth);
+	min-width: 4px;
+}
+
+[data-theme="dark"] .progress-bar {
+	background-color: #7b3fa0;
+	box-shadow: 0 0 8px #7b3fa0;
+}
+
+/* Theme toggle button */
+#theme-toggle {
+	background: none;
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+	font-size: 20px;
+	line-height: 1;
+	padding: 6px 10px;
+	color: var(--text-primary);
+	transition: all 0.2s var(--easing-smooth);
+	flex-shrink: 0;
+}
+
+#theme-toggle:hover {
+	border-color: var(--color-accent);
+	background-color: var(--color-grid-subtle);
+	transform: scale(1.08);
+}
+
+/* Navigation tabs (section switcher in header if present) */
+.nav-tabs {
+	display: flex;
+	gap: 4px;
+}
+
+.nav-tab {
+	background: none;
+	border: none;
+	color: var(--text-secondary);
+	font-size: 13px;
+	padding: 6px 12px;
+	border-radius: 6px;
+	transition: all 0.2s var(--easing-smooth);
+}
+
+.nav-tab:hover,
+.nav-tab.active {
+	color: var(--text-primary);
+	background-color: var(--color-grid-subtle);
+}
+
+.nav-tab.active {
+	color: var(--color-accent);
+}

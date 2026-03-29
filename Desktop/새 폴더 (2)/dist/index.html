@@ -1,0 +1,3491 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>이진탐색 튜토리얼 - Interactive Binary Search Learning</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+	<style>/* ==========================================================================
+   Binary Search Tutorial — style.css
+   Awwwards-inspired: bruno-simon (dark neon grid) + cassie.codes (color
+   blocks) + strml.net (minimal code panel + bottom controls)
+   UTF-8, LF line endings
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. CSS Custom Properties
+   -------------------------------------------------------------------------- */
+
+:root {
+	/* --- Typography --- */
+	--font-sans:
+		-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+		Arial, sans-serif;
+	--font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+
+	/* --- Easing --- */
+	--easing-smooth: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+	--easing-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+	--easing-sharp: cubic-bezier(0.4, 0, 0.2, 1);
+
+	/* --- Z-index scale --- */
+	--z-header: 100;
+	--z-footer: 100;
+	--z-overlay: 200;
+
+	/* --- Layout constants --- */
+	--header-height: 64px;
+	--footer-height: 64px;
+	--content-max-w: 1440px;
+	--section-pad-x: 40px;
+	--section-pad-y: 32px;
+}
+
+/* Dark mode — default (bruno-simon inspired) */
+:root,
+[data-theme="dark"] {
+	/* Backgrounds */
+	--bg-base: #0d0d14;
+	--bg-surface: #161222;
+	--bg-code: #0d1117;
+	--bg-overlay: rgba(13, 13, 20, 0.85);
+
+	/* Text */
+	--text-primary: rgba(255, 255, 255, 0.9);
+	--text-secondary: rgba(255, 255, 255, 0.55);
+	--text-muted: rgba(255, 255, 255, 0.3);
+
+	/* Grid / borders (purple neon grid from bruno-simon) */
+	--color-grid: #7b3fa0;
+	--color-grid-subtle: rgba(123, 63, 160, 0.25);
+	--color-border: #3a3a4a;
+
+	/* Accent */
+	--color-accent: #88ccff;
+	--color-accent-glow: #4488ee;
+	--color-success: #4fc878;
+	--color-error: #f85149;
+
+	/* Bar states */
+	--bar-inactive: #2a2a3a;
+	--bar-in-range: #7b3fa0;
+	--bar-active: #88ccff; /* mid bar */
+	--bar-found: #4fc878;
+	--bar-eliminated: rgba(255, 255, 255, 0.08);
+	--bar-mid-glow: 0 0 12px #88ccff, 0 0 28px #4488ee;
+	--bar-found-glow: 0 0 14px #4fc878, 0 0 28px rgba(79, 200, 120, 0.4);
+
+	/* Pointer colors */
+	--ptr-low: #f78166;
+	--ptr-high: #79c0ff;
+	--ptr-mid: #88ccff;
+
+	/* Code panel */
+	--code-bg: #0d1117;
+	--code-line-active: #1e293b;
+	--code-border: #7b3fa0;
+	--code-text: #e0e0ff;
+	--code-line-num: rgba(255, 255, 255, 0.3);
+
+	/* Quiz */
+	--quiz-correct-bg: rgba(79, 200, 120, 0.15);
+	--quiz-correct-border: #4fc878;
+	--quiz-wrong-bg: rgba(248, 81, 73, 0.15);
+	--quiz-wrong-border: #f85149;
+
+	/* Shadows */
+	--shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
+	--shadow-md: 0 4px 20px rgba(0, 0, 0, 0.5);
+	--shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.6);
+	--shadow-neon: 0 0 20px rgba(136, 204, 255, 0.15);
+
+	/* Scrollbar */
+	--scrollbar-track: #1a1a2a;
+	--scrollbar-thumb: #3a3a5a;
+}
+
+/* Light mode (cassie.codes inspired: pastel blocks, clean cards) */
+[data-theme="light"] {
+	/* Backgrounds */
+	--bg-base: #f8f9fa;
+	--bg-surface: #ffffff;
+	--bg-code: #f6f8fa;
+	--bg-overlay: rgba(248, 249, 250, 0.9);
+
+	/* Text */
+	--text-primary: #1a1a2e;
+	--text-secondary: #6b7280;
+	--text-muted: #9ca3af;
+
+	/* Grid / borders */
+	--color-grid: #e0d0f0;
+	--color-grid-subtle: rgba(201, 184, 232, 0.3);
+	--color-border: #e5e7eb;
+
+	/* Accent */
+	--color-accent: #3b82f6;
+	--color-accent-glow: #2563eb;
+	--color-success: #22c55e;
+	--color-error: #ef4444;
+
+	/* Bar states */
+	--bar-inactive: #d1d5db;
+	--bar-in-range: #c9b8e8;
+	--bar-active: #3b82f6;
+	--bar-found: #22c55e;
+	--bar-eliminated: #e5e7eb;
+	--bar-mid-glow:
+		0 0 8px rgba(59, 130, 246, 0.4), 0 0 16px rgba(59, 130, 246, 0.2);
+	--bar-found-glow: 0 0 8px rgba(34, 197, 94, 0.4);
+
+	/* Pointer colors */
+	--ptr-low: #ef4444;
+	--ptr-high: #3b82f6;
+	--ptr-mid: #2563eb;
+
+	/* Code panel */
+	--code-bg: #f6f8fa;
+	--code-line-active: #eff6ff;
+	--code-border: #c9b8e8;
+	--code-text: #1e293b;
+	--code-line-num: #9ca3af;
+
+	/* Quiz */
+	--quiz-correct-bg: rgba(34, 197, 94, 0.1);
+	--quiz-correct-border: #22c55e;
+	--quiz-wrong-bg: rgba(239, 68, 68, 0.1);
+	--quiz-wrong-border: #ef4444;
+
+	/* Shadows */
+	--shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+	--shadow-md: 0 4px 20px rgba(0, 0, 0, 0.12);
+	--shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.16);
+	--shadow-neon: 0 0 20px rgba(59, 130, 246, 0.1);
+
+	/* Scrollbar */
+	--scrollbar-track: #f1f1f1;
+	--scrollbar-thumb: #c1c1c1;
+}
+
+/* --------------------------------------------------------------------------
+   2. Reset & Global
+   -------------------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+
+html {
+	scroll-behavior: smooth;
+	-webkit-text-size-adjust: 100%;
+}
+
+body {
+	font-family: var(--font-sans);
+	font-size: 16px;
+	line-height: 1.6;
+	color: var(--text-primary);
+	background-color: var(--bg-base);
+	height: 100vh;
+	overflow: hidden;
+	transition:
+		background-color 0.3s var(--easing-smooth),
+		color 0.3s var(--easing-smooth);
+
+	/* Bruno-simon: line grid + dot markers on dark background */
+	background-image:
+		linear-gradient(rgba(123, 63, 160, 0.12) 1px, transparent 1px),
+		linear-gradient(90deg, rgba(123, 63, 160, 0.12) 1px, transparent 1px),
+		radial-gradient(circle, rgba(123, 63, 160, 0.35) 1px, transparent 1px);
+	background-size:
+		40px 40px,
+		40px 40px,
+		40px 40px;
+}
+
+[data-theme="light"] body {
+	background-image: none;
+}
+
+/* Reinforce grid for explicit dark mode */
+[data-theme="dark"] body {
+	background-image:
+		linear-gradient(rgba(123, 63, 160, 0.12) 1px, transparent 1px),
+		linear-gradient(90deg, rgba(123, 63, 160, 0.12) 1px, transparent 1px),
+		radial-gradient(circle, rgba(123, 63, 160, 0.35) 1px, transparent 1px);
+	background-size:
+		40px 40px,
+		40px 40px,
+		40px 40px;
+}
+
+a {
+	color: var(--color-accent);
+	text-decoration: none;
+	transition: opacity 0.2s var(--easing-smooth);
+}
+
+a:hover {
+	opacity: 0.8;
+}
+
+button {
+	font-family: var(--font-sans);
+	cursor: pointer;
+}
+
+/* Hide all scrollbars */
+* {
+	scrollbar-width: none; /* Firefox */
+}
+::-webkit-scrollbar {
+	display: none; /* Chrome, Safari, Edge */
+}
+
+::-webkit-scrollbar-track {
+	background: transparent;
+	border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+	background: transparent;
+	border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	opacity: 0.8;
+}
+
+/* --------------------------------------------------------------------------
+   3. Header (.top-bar / header)
+   -------------------------------------------------------------------------- */
+
+header {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: var(--header-height);
+	z-index: var(--z-header);
+
+	background-color: var(--bg-surface);
+	border-bottom: 1px solid var(--color-grid);
+	backdrop-filter: blur(8px);
+	-webkit-backdrop-filter: blur(8px);
+
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0 var(--section-pad-x);
+	gap: 16px;
+
+	transition:
+		background-color 0.3s var(--easing-smooth),
+		border-color 0.3s var(--easing-smooth);
+}
+
+/* Neon bottom glow on header — bruno-simon effect */
+header {
+	box-shadow: 0 1px 20px rgba(123, 63, 160, 0.3);
+}
+
+[data-theme="dark"] header {
+	box-shadow:
+		0 1px 0 var(--color-grid),
+		0 1px 20px rgba(123, 63, 160, 0.3),
+		0 2px 40px rgba(123, 63, 160, 0.15);
+}
+
+[data-theme="light"] header {
+	box-shadow: var(--shadow-sm);
+}
+
+header h1 {
+	font-size: 20px;
+	font-weight: 700;
+	letter-spacing: -0.3px;
+	white-space: nowrap;
+	color: var(--text-primary);
+}
+
+[data-theme="dark"] header h1 {
+	/* Subtle neon text glow — bruno-simon */
+	text-shadow: 0 0 20px rgba(136, 204, 255, 0.3);
+}
+
+/* Step indicator + progress bar */
+.step-indicator {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex: 1;
+	margin: 0 16px;
+	min-width: 0;
+}
+
+.step-text {
+	font-size: 13px;
+	color: var(--text-secondary);
+	white-space: nowrap;
+}
+
+.progress-bar-container {
+	width: 150px;
+	height: 6px;
+	background-color: rgba(123, 63, 160, 0.3);
+	border-radius: 3px;
+	overflow: hidden;
+	flex-shrink: 0;
+}
+
+.progress-bar {
+	height: 100%;
+	background-color: var(--color-accent);
+	width: 20%;
+	border-radius: 3px;
+	transition: width 0.4s var(--easing-smooth);
+	min-width: 4px;
+}
+
+[data-theme="dark"] .progress-bar {
+	background-color: #7b3fa0;
+	box-shadow: 0 0 8px #7b3fa0;
+}
+
+/* Theme toggle button */
+#theme-toggle {
+	background: none;
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+	font-size: 20px;
+	line-height: 1;
+	padding: 6px 10px;
+	color: var(--text-primary);
+	transition: all 0.2s var(--easing-smooth);
+	flex-shrink: 0;
+}
+
+#theme-toggle:hover {
+	border-color: var(--color-accent);
+	background-color: var(--color-grid-subtle);
+	transform: scale(1.08);
+}
+
+/* Navigation tabs (section switcher in header if present) */
+.nav-tabs {
+	display: flex;
+	gap: 4px;
+}
+
+.nav-tab {
+	background: none;
+	border: none;
+	color: var(--text-secondary);
+	font-size: 13px;
+	padding: 6px 12px;
+	border-radius: 6px;
+	transition: all 0.2s var(--easing-smooth);
+}
+
+.nav-tab:hover,
+.nav-tab.active {
+	color: var(--text-primary);
+	background-color: var(--color-grid-subtle);
+}
+
+.nav-tab.active {
+	color: var(--color-accent);
+}
+
+/* --------------------------------------------------------------------------
+   4. Main content area
+   -------------------------------------------------------------------------- */
+
+main {
+	position: fixed;
+	top: var(--header-height);
+	left: 0;
+	right: 0;
+	bottom: var(--footer-height);
+	overflow: hidden;
+	background-color: var(--bg-base);
+	transition: background-color 0.3s var(--easing-smooth);
+}
+
+/* Sections */
+.section {
+	padding: 12px var(--section-pad-x);
+	max-width: 100%;
+	margin: 0 auto;
+	height: 100%;
+	display: none;
+	animation: fadeIn 0.3s var(--easing-smooth);
+	overflow: hidden;
+}
+
+/* Visualization section: fill entire available space */
+#visualization.section,
+#visualization.section.active {
+	max-width: none;
+	padding: 8px var(--section-pad-x);
+	display: none;
+	flex-direction: column;
+}
+#visualization.section.active {
+	display: flex;
+}
+
+/* --- Section color distinction (cassie-codes style) --- */
+/* Each section gets a distinct left-border accent in dark mode */
+[data-theme="dark"] #intro,
+#intro {
+	border-left: 4px solid #7ecec4;
+	padding-left: calc(var(--section-pad-x) - 4px);
+}
+
+[data-theme="dark"] #visualization,
+#visualization {
+	border-left: 4px solid #7b3fa0;
+	padding-left: calc(var(--section-pad-x) - 4px);
+}
+
+[data-theme="dark"] #quiz,
+#quiz {
+	border-left: 4px solid #c9b8e8;
+	padding-left: calc(var(--section-pad-x) - 4px);
+}
+
+[data-theme="dark"] #complexity,
+#complexity {
+	border-left: 4px solid #f5e6a3;
+	padding-left: calc(var(--section-pad-x) - 4px);
+}
+
+[data-theme="light"] #intro,
+[data-theme="light"] #visualization,
+[data-theme="light"] #quiz,
+[data-theme="light"] #complexity {
+	border-left: none;
+	padding-left: var(--section-pad-x);
+}
+
+.section.active {
+	display: block;
+}
+
+#visualization.section.active {
+	display: flex !important;
+}
+
+#visualization h2 {
+	display: none;
+}
+
+.section h1 {
+	font-size: 32px;
+	font-weight: 700;
+	margin-bottom: 16px;
+	letter-spacing: -0.5px;
+	color: var(--text-primary);
+}
+
+.section h2 {
+	font-size: 20px;
+	font-weight: 600;
+	margin-bottom: 8px;
+	letter-spacing: -0.3px;
+	color: var(--text-primary);
+}
+
+.section h3 {
+	font-size: 18px;
+	font-weight: 600;
+	margin-bottom: 12px;
+	color: var(--text-primary);
+}
+
+.section p {
+	margin-bottom: 16px;
+	color: var(--text-secondary);
+	line-height: 1.8;
+}
+
+/* --------------------------------------------------------------------------
+   5. Section 1: Concept Introduction
+   -------------------------------------------------------------------------- */
+
+#intro .intro-question {
+	font-size: 18px;
+	font-weight: 500;
+	margin-bottom: 28px;
+	color: var(--color-accent);
+	line-height: 1.5;
+}
+
+/* Analogy cards — cassie.codes-style colorful card blocks */
+.analogy-cards {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 16px;
+	margin-bottom: 28px;
+}
+
+.analogy-card {
+	background-color: var(--bg-surface);
+	border: 2px solid var(--color-grid);
+	border-radius: 12px;
+	padding: 20px 16px;
+	text-align: center;
+	transition: all 0.25s var(--easing-bounce);
+	position: relative;
+	overflow: hidden;
+}
+
+.analogy-card::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(
+		135deg,
+		transparent 60%,
+		var(--color-grid-subtle)
+	);
+	opacity: 0;
+	transition: opacity 0.3s var(--easing-smooth);
+}
+
+.analogy-card:hover {
+	border-color: var(--color-accent);
+	transform: translateY(-6px);
+	box-shadow: var(--shadow-md), var(--shadow-neon);
+}
+
+.analogy-card:hover::before {
+	opacity: 1;
+}
+
+.analogy-card .emoji {
+	font-size: 36px;
+	margin-bottom: 10px;
+	display: block;
+}
+
+.analogy-card .title {
+	font-weight: 700;
+	font-size: 15px;
+	margin-bottom: 8px;
+	color: var(--text-primary);
+}
+
+.analogy-card .desc {
+	font-size: 13px;
+	color: var(--text-secondary);
+	line-height: 1.5;
+}
+
+/* Callout box — left-border accent, semi-transparent bg */
+.callout-box {
+	background-color: rgba(123, 63, 160, 0.1);
+	border-left: 4px solid var(--color-grid);
+	border-radius: 0 8px 8px 0;
+	padding: 16px 20px;
+	margin: 24px 0;
+	font-weight: 500;
+	color: var(--text-primary);
+	transition: border-color 0.3s var(--easing-smooth);
+}
+
+[data-theme="light"] .callout-box {
+	background-color: rgba(201, 184, 232, 0.15);
+}
+
+.callout-box:hover {
+	border-color: var(--color-accent);
+}
+
+/* Definition box */
+.definition-box {
+	background-color: var(--bg-surface);
+	border: 1px solid var(--color-grid);
+	padding: 20px;
+	border-radius: 10px;
+	margin-top: 24px;
+	font-size: 15px;
+	line-height: 1.7;
+	color: var(--text-primary);
+	box-shadow: var(--shadow-sm);
+}
+
+/* Start button */
+#start-btn {
+	background-color: var(--color-accent);
+	color: var(--bg-base);
+	border: none;
+	padding: 12px 28px;
+	border-radius: 8px;
+	font-size: 16px;
+	font-weight: 700;
+	cursor: pointer;
+	margin-top: 28px;
+	transition: all 0.25s var(--easing-bounce);
+	letter-spacing: 0.3px;
+}
+
+#start-btn:hover {
+	transform: scale(1.06) translateY(-2px);
+	box-shadow: var(--shadow-md), var(--bar-mid-glow);
+}
+
+#start-btn:active {
+	transform: scale(0.98);
+}
+
+/* --------------------------------------------------------------------------
+   5. Section 1: Concept Introduction
+   -------------------------------------------------------------------------- */
+
+#intro .intro-question {
+	font-size: 18px;
+	font-weight: 500;
+	margin-bottom: 28px;
+	color: var(--color-accent);
+	line-height: 1.5;
+}
+
+/* Analogy cards — cassie.codes-style colorful card blocks */
+.analogy-cards {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 16px;
+	margin-bottom: 28px;
+}
+
+.analogy-card {
+	background-color: var(--bg-surface);
+	border: 2px solid var(--color-grid);
+	border-radius: 12px;
+	padding: 20px 16px;
+	text-align: center;
+	transition: all 0.25s var(--easing-bounce);
+	position: relative;
+	overflow: hidden;
+}
+
+.analogy-card::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(
+		135deg,
+		transparent 60%,
+		var(--color-grid-subtle)
+	);
+	opacity: 0;
+	transition: opacity 0.3s var(--easing-smooth);
+}
+
+.analogy-card:hover {
+	border-color: var(--color-accent);
+	transform: translateY(-6px);
+	box-shadow: var(--shadow-md), var(--shadow-neon);
+}
+
+.analogy-card:hover::before {
+	opacity: 1;
+}
+
+.analogy-card .emoji {
+	font-size: 36px;
+	margin-bottom: 10px;
+	display: block;
+}
+
+.analogy-card .title {
+	font-weight: 700;
+	font-size: 15px;
+	margin-bottom: 8px;
+	color: var(--text-primary);
+}
+
+.analogy-card .desc {
+	font-size: 13px;
+	color: var(--text-secondary);
+	line-height: 1.5;
+}
+
+/* Callout box — left-border accent, semi-transparent bg */
+.callout-box {
+	background-color: rgba(123, 63, 160, 0.1);
+	border-left: 4px solid var(--color-grid);
+	border-radius: 0 8px 8px 0;
+	padding: 16px 20px;
+	margin: 24px 0;
+	font-weight: 500;
+	color: var(--text-primary);
+	transition: border-color 0.3s var(--easing-smooth);
+}
+
+[data-theme="light"] .callout-box {
+	background-color: rgba(201, 184, 232, 0.15);
+}
+
+.callout-box:hover {
+	border-color: var(--color-accent);
+}
+
+/* Definition box */
+.definition-box {
+	background-color: var(--bg-surface);
+	border: 1px solid var(--color-grid);
+	padding: 20px;
+	border-radius: 10px;
+	margin-top: 24px;
+	font-size: 15px;
+	line-height: 1.7;
+	color: var(--text-primary);
+	box-shadow: var(--shadow-sm);
+}
+
+/* Start button */
+#start-btn {
+	background-color: var(--color-accent);
+	color: var(--bg-base);
+	border: none;
+	padding: 12px 28px;
+	border-radius: 8px;
+	font-size: 16px;
+	font-weight: 700;
+	cursor: pointer;
+	margin-top: 28px;
+	transition: all 0.25s var(--easing-bounce);
+	letter-spacing: 0.3px;
+}
+
+#start-btn:hover {
+	transform: scale(1.06) translateY(-2px);
+	box-shadow: var(--shadow-md), var(--bar-mid-glow);
+}
+
+#start-btn:active {
+	transform: scale(0.98);
+}
+
+/* --------------------------------------------------------------------------
+   6. Section 2 & 3: Visualization Container
+   -------------------------------------------------------------------------- */
+
+/* Desktop: 60/40 grid split, fill all available height */
+.visualization-container {
+	display: grid;
+	grid-template-columns: 3fr 2fr;
+	grid-template-rows: 1fr;
+	gap: 16px;
+	flex: 1;
+	min-height: 0;
+	align-items: stretch;
+}
+
+.visualization-container > * {
+	height: 100%;
+}
+
+/* --- Search target label --- */
+.search-target {
+	font-size: 14px;
+	font-family: var(--font-mono);
+	color: var(--text-secondary);
+	margin-bottom: 4px;
+}
+
+.search-target strong {
+	color: var(--color-accent);
+	font-size: 16px;
+}
+
+/* --- Array container --- */
+.array-container {
+	background-color: var(--bg-surface);
+	border: 1px solid var(--color-grid);
+	border-radius: 12px;
+	padding: 16px;
+	display: flex;
+	flex-direction: column;
+	box-shadow: var(--shadow-sm);
+	transition: border-color 0.3s var(--easing-smooth);
+	position: relative;
+	overflow: visible;
+	min-height: 0;
+}
+
+[data-theme="dark"] .array-container {
+	/* Subtle internal grid background — bruno-simon feel */
+	background-image:
+		linear-gradient(rgba(123, 63, 160, 0.07) 1px, transparent 1px),
+		linear-gradient(90deg, rgba(123, 63, 160, 0.07) 1px, transparent 1px);
+	background-size: 24px 24px;
+}
+
+/* Pointer display row */
+.pointer-container {
+	display: flex;
+	justify-content: space-around;
+	align-items: flex-end;
+	height: 48px;
+	margin-bottom: 12px;
+	position: relative;
+	overflow: visible;
+}
+
+.pointer {
+	font-size: 12px;
+	font-weight: 700;
+	opacity: 0;
+	transition: all 0.3s var(--easing-smooth);
+	position: absolute;
+	pointer-events: none;
+	width: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.pointer.active {
+	opacity: 1;
+}
+
+.pointer-arrow {
+	font-size: 18px;
+	line-height: 1;
+	margin-bottom: 2px;
+}
+
+.pointer-label {
+	white-space: nowrap;
+}
+
+.pointer--low .pointer-arrow {
+	color: var(--ptr-low);
+}
+.pointer--mid .pointer-arrow {
+	color: var(--ptr-mid);
+}
+.pointer--high .pointer-arrow {
+	color: var(--ptr-high);
+}
+
+.pointer--low .pointer-label {
+	color: var(--ptr-low);
+}
+.pointer--mid .pointer-label {
+	color: var(--ptr-mid);
+}
+.pointer--high .pointer-label {
+	color: var(--ptr-high);
+}
+
+.pointer-label {
+	font-size: 11px;
+	font-family: var(--font-mono);
+	letter-spacing: 0.5px;
+}
+
+/* Bars row */
+.bars-row {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-around;
+	flex: 1;
+	gap: 3px;
+	padding-bottom: 28px; /* space for value labels */
+	position: relative;
+}
+
+/* Individual bar */
+.bar {
+	flex: 1;
+	min-width: 28px;
+	max-width: 80px;
+	background-color: var(--bar-inactive);
+	border-radius: 4px 4px 0 0;
+	transition: all 0.3s var(--easing-smooth);
+	cursor: default;
+	position: relative;
+}
+
+/* Bar states */
+.bar.bar--in-range {
+	background-color: var(--bar-in-range);
+}
+
+.bar.bar--mid {
+	background-color: var(--bar-active);
+	box-shadow:
+		var(--bar-mid-glow),
+		0 0 8px var(--bar-active),
+		0 0 20px rgba(136, 204, 255, 0.4),
+		0 0 40px rgba(68, 136, 238, 0.2);
+}
+
+/* Pulse animation on active mid bar */
+.bar.bar--mid::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	background-color: var(--bar-active);
+	opacity: 0.4;
+	animation: pulse 1.2s var(--easing-smooth) infinite;
+}
+
+.bar.bar--found {
+	background-color: var(--bar-found);
+	box-shadow:
+		var(--bar-found-glow),
+		0 0 8px var(--bar-found),
+		0 0 20px rgba(79, 200, 120, 0.4);
+}
+
+.bar.bar--eliminated {
+	background-color: var(--bar-eliminated);
+	opacity: 0.5;
+}
+
+/* Value label below bar */
+.bar-value {
+	position: absolute;
+	bottom: -22px;
+	left: 50%;
+	transform: translateX(-50%);
+	font-size: 11px;
+	color: var(--text-secondary);
+	white-space: nowrap;
+	font-family: var(--font-mono);
+}
+
+/* Step description / info below array */
+.info-panel {
+	margin-top: 8px;
+	padding-top: 8px;
+	border-top: 1px solid var(--color-border);
+	font-size: 13px;
+	color: var(--text-secondary);
+	line-height: 1.4;
+}
+
+.info-panel strong {
+	color: var(--text-primary);
+}
+
+/* Pointer state display */
+.pointer-state {
+	display: flex;
+	gap: 16px;
+	flex-wrap: wrap;
+	margin-top: 8px;
+	font-size: 13px;
+	font-family: var(--font-mono);
+}
+
+.ptr-val--low {
+	color: var(--ptr-low);
+}
+.ptr-val--mid {
+	color: var(--ptr-mid);
+}
+.ptr-val--high {
+	color: var(--ptr-high);
+}
+
+/* --------------------------------------------------------------------------
+   7. Code Panel
+   -------------------------------------------------------------------------- */
+
+.code-panel-wrapper {
+	background-color: var(--bg-surface);
+	border: 1px solid var(--color-grid);
+	border-radius: 12px;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	box-shadow: var(--shadow-sm);
+	min-height: 0;
+}
+
+/* Tab bar — strml-inspired minimal tabs */
+.tab-bar {
+	display: flex;
+	border-bottom: 1px solid var(--color-grid);
+	padding: 0 12px;
+	background-color: var(--bg-surface);
+	gap: 0;
+}
+
+.code-tab {
+	background: none;
+	border: none;
+	color: var(--text-secondary);
+	padding: 10px 16px;
+	font-size: 13px;
+	font-weight: 600;
+	font-family: var(--font-mono);
+	border-bottom: 2px solid transparent;
+	transition: all 0.2s var(--easing-smooth);
+	letter-spacing: 0.3px;
+}
+
+.code-tab:hover {
+	color: var(--text-primary);
+}
+
+.code-tab.active {
+	color: var(--text-primary);
+	border-bottom-color: var(--color-accent);
+}
+
+[data-theme="dark"] .code-tab.active {
+	color: var(--color-accent);
+	text-shadow: 0 0 12px rgba(136, 204, 255, 0.5);
+}
+
+/* Code block — strml.net style */
+.code-panel {
+	flex: 1;
+	overflow-y: auto;
+	overflow-x: hidden;
+	padding: 12px 0;
+	background-color: var(--code-bg);
+	font-family: var(--font-mono);
+	font-size: 14px;
+	line-height: 1.6;
+	border-left: 3px solid var(--code-border);
+	color: var(--code-text);
+}
+
+.code-line {
+	display: flex;
+	align-items: baseline;
+	padding: 1px 12px 1px 0;
+	color: var(--text-secondary);
+	transition: background-color 0.2s var(--easing-smooth);
+	white-space: pre;
+}
+
+.code-line--active,
+.code-line.active {
+	background-color: var(--code-line-active);
+	color: var(--text-primary);
+}
+
+[data-theme="dark"] .code-line--active,
+[data-theme="dark"] .code-line.active {
+	border-left: 3px solid var(--color-accent);
+	margin-left: -3px;
+}
+
+.code-line-number {
+	color: var(--code-line-num);
+	font-size: 12px;
+	min-width: 36px;
+	padding-left: 12px;
+	padding-right: 8px;
+	text-align: right;
+	user-select: none;
+	flex-shrink: 0;
+}
+
+.code-line-content {
+	flex: 1;
+	color: inherit;
+}
+
+/* Typing cursor (strml.net style blinking cursor) */
+.typing-cursor {
+	display: inline-block;
+	width: 2px;
+	height: 1em;
+	background-color: var(--color-accent);
+	vertical-align: text-bottom;
+	animation: blink-cursor 0.8s step-end infinite;
+	margin-left: 1px;
+}
+
+[data-theme="dark"] .typing-cursor {
+	box-shadow: 0 0 6px var(--color-accent);
+}
+
+/* --------------------------------------------------------------------------
+   8. Controls (.controls inline + footer control bar)
+   -------------------------------------------------------------------------- */
+
+/* Inline controls within sections */
+.controls {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	flex-wrap: wrap;
+	margin-top: 20px;
+	padding-top: 20px;
+	border-top: 1px solid var(--color-border);
+}
+
+/* Footer control bar — sticky bottom 64px */
+footer {
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	height: var(--footer-height);
+	z-index: var(--z-footer);
+
+	background-color: var(--bg-surface);
+	border-top: 1px solid var(--color-grid);
+	backdrop-filter: blur(8px);
+	-webkit-backdrop-filter: blur(8px);
+
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 8px 24px;
+
+	transition: background-color 0.3s var(--easing-smooth);
+}
+
+[data-theme="dark"] footer {
+	box-shadow:
+		0 -1px 0 var(--color-grid),
+		0 -4px 24px rgba(123, 63, 160, 0.12);
+}
+
+/* Shared button style for footer + controls */
+footer button,
+.controls button {
+	background-color: transparent;
+	border: 1px solid var(--color-border);
+	color: var(--text-primary);
+	padding: 8px 12px;
+	border-radius: 8px;
+	font-size: 16px;
+	font-family: var(--font-sans);
+	min-width: 44px;
+	min-height: 44px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.2s var(--easing-smooth);
+}
+
+footer button:hover,
+.controls button:hover {
+	border-color: var(--color-accent);
+	background-color: var(--color-grid-subtle);
+	transform: translateY(-1px);
+}
+
+footer button:active,
+.controls button:active {
+	transform: translateY(0);
+	box-shadow: none;
+}
+
+footer button.active,
+.controls button.active {
+	background-color: var(--color-grid-subtle);
+	border-color: var(--color-accent);
+	color: var(--color-accent);
+}
+
+[data-theme="dark"] footer button:hover,
+[data-theme="dark"] .controls button:hover {
+	box-shadow: 0 0 12px rgba(136, 204, 255, 0.15);
+}
+
+/* Play/Pause button — primary action, neon accent */
+#play-btn,
+.btn-play {
+	border-color: var(--color-accent);
+	color: var(--color-accent);
+}
+
+[data-theme="dark"] #play-btn,
+[data-theme="dark"] .btn-play {
+	box-shadow: 0 0 8px rgba(136, 204, 255, 0.2);
+}
+
+/* Speed control */
+.speed-control {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.speed-control label {
+	font-size: 12px;
+	color: var(--text-secondary);
+	white-space: nowrap;
+	user-select: none;
+}
+
+/* Custom range slider */
+#speed-slider,
+#speed-slider-footer,
+.speed-slider {
+	-webkit-appearance: none;
+	appearance: none;
+	width: 150px;
+	height: 6px;
+	border-radius: 3px;
+	background: linear-gradient(
+		to right,
+		#7b3fa0 0%,
+		#7b3fa0 50%,
+		rgba(123, 63, 160, 0.3) 50%,
+		rgba(123, 63, 160, 0.3) 100%
+	);
+	outline: none;
+	cursor: pointer;
+	transition: background 0.2s var(--easing-smooth);
+	border: none;
+}
+
+#speed-slider::-webkit-slider-runnable-track,
+#speed-slider-footer::-webkit-slider-runnable-track,
+.speed-slider::-webkit-slider-runnable-track {
+	height: 6px;
+	border-radius: 3px;
+	background: linear-gradient(to right, #7b3fa0, rgba(123, 63, 160, 0.4));
+	cursor: pointer;
+}
+
+#speed-slider::-webkit-slider-thumb,
+#speed-slider-footer::-webkit-slider-thumb,
+.speed-slider::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	appearance: none;
+	width: 16px;
+	height: 16px;
+	border-radius: 50%;
+	background-color: #7b3fa0;
+	border: 2px solid var(--bg-surface);
+	cursor: pointer;
+	margin-top: -5px;
+	transition: transform 0.15s var(--easing-bounce);
+	box-shadow: 0 0 8px rgba(123, 63, 160, 0.6);
+}
+
+#speed-slider::-webkit-slider-thumb:hover,
+#speed-slider-footer::-webkit-slider-thumb:hover,
+.speed-slider::-webkit-slider-thumb:hover {
+	transform: scale(1.25);
+	background-color: #9b5fc0;
+}
+
+[data-theme="dark"] #speed-slider::-webkit-slider-thumb,
+[data-theme="dark"] #speed-slider-footer::-webkit-slider-thumb,
+[data-theme="dark"] .speed-slider::-webkit-slider-thumb {
+	box-shadow: 0 0 10px #7b3fa0;
+}
+
+#speed-slider::-moz-range-track,
+#speed-slider-footer::-moz-range-track,
+.speed-slider::-moz-range-track {
+	height: 6px;
+	border-radius: 3px;
+	background: linear-gradient(to right, #7b3fa0, rgba(123, 63, 160, 0.4));
+	cursor: pointer;
+	border: none;
+}
+
+#speed-slider::-moz-range-thumb,
+#speed-slider-footer::-moz-range-thumb,
+.speed-slider::-moz-range-thumb {
+	width: 16px;
+	height: 16px;
+	border-radius: 50%;
+	background-color: #7b3fa0;
+	border: 2px solid var(--bg-surface);
+	cursor: pointer;
+	box-shadow: 0 0 8px rgba(123, 63, 160, 0.6);
+}
+
+.step-counter {
+	font-size: 13px;
+	color: var(--text-secondary);
+	min-width: 64px;
+	text-align: center;
+	font-family: var(--font-mono);
+}
+
+/* --------------------------------------------------------------------------
+   9. Quiz Section
+   -------------------------------------------------------------------------- */
+
+#quiz-container {
+	max-width: 600px;
+	margin: 0 auto;
+}
+
+.question-card {
+	background-color: var(--bg-surface);
+	border: 1px solid var(--color-grid);
+	border-radius: 12px;
+	padding: 24px;
+	margin-bottom: 24px;
+	box-shadow: var(--shadow-sm);
+	transition: border-color 0.3s var(--easing-smooth);
+	animation: slideUp 0.35s var(--easing-smooth);
+}
+
+.quiz-progress {
+	font-size: 12px;
+	color: var(--text-secondary);
+	margin-bottom: 14px;
+	font-family: var(--font-mono);
+	letter-spacing: 0.5px;
+}
+
+.quiz-progress-bar-wrap {
+	width: 100%;
+	height: 4px;
+	background-color: var(--bar-eliminated);
+	border-radius: 2px;
+	margin-top: 6px;
+	overflow: hidden;
+}
+
+.quiz-progress-bar {
+	height: 100%;
+	background-color: var(--color-accent);
+	border-radius: 2px;
+	transition: width 0.4s var(--easing-smooth);
+}
+
+.question-text {
+	font-size: 16px;
+	font-weight: 600;
+	margin: 16px 0 24px;
+	line-height: 1.5;
+	color: var(--text-primary);
+}
+
+/* Quiz options */
+.quiz-options {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	margin-bottom: 20px;
+}
+
+.quiz-option {
+	display: flex;
+	align-items: center;
+	padding: 12px 16px;
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+	cursor: pointer;
+	transition: all 0.2s var(--easing-smooth);
+	user-select: none;
+}
+
+.quiz-option:hover {
+	border-color: var(--color-accent);
+	background-color: var(--color-grid-subtle);
+	transform: translateX(4px);
+}
+
+.quiz-option input[type="radio"] {
+	margin-right: 12px;
+	cursor: pointer;
+	accent-color: var(--color-accent);
+	width: 16px;
+	height: 16px;
+}
+
+.quiz-option label {
+	cursor: pointer;
+	flex: 1;
+	font-size: 14px;
+	line-height: 1.5;
+}
+
+/* Correct answer — cassie.codes green block */
+.quiz-option.quiz-btn--correct,
+.quiz-option--correct {
+	border-color: var(--quiz-correct-border);
+	background-color: var(--quiz-correct-bg);
+	box-shadow: 0 0 16px rgba(79, 200, 120, 0.25);
+}
+
+/* Wrong answer — red glow */
+.quiz-option.quiz-btn--wrong,
+.quiz-option--wrong {
+	border-color: var(--quiz-wrong-border);
+	background-color: var(--quiz-wrong-bg);
+	box-shadow: 0 0 12px rgba(248, 81, 73, 0.2);
+}
+
+/* Feedback message */
+.quiz-feedback {
+	padding: 12px 16px;
+	border-radius: 8px;
+	margin-top: 14px;
+	display: none;
+	font-size: 14px;
+	font-weight: 500;
+	line-height: 1.5;
+	animation: fadeIn 0.25s var(--easing-smooth);
+}
+
+.quiz-feedback.correct {
+	display: block;
+	background-color: var(--quiz-correct-bg);
+	border: 1px solid var(--quiz-correct-border);
+	color: var(--color-success);
+}
+
+.quiz-feedback.incorrect {
+	display: block;
+	background-color: var(--quiz-wrong-bg);
+	border: 1px solid var(--quiz-wrong-border);
+	color: var(--color-error);
+}
+
+/* Quiz buttons */
+.quiz-buttons {
+	display: flex;
+	gap: 10px;
+	margin-top: 4px;
+}
+
+.quiz-buttons button {
+	flex: 1;
+	padding: 11px 16px;
+	border: 1px solid var(--color-border);
+	background-color: transparent;
+	color: var(--text-primary);
+	border-radius: 8px;
+	font-size: 14px;
+	font-weight: 600;
+	transition: all 0.2s var(--easing-smooth);
+}
+
+.quiz-buttons button:hover {
+	border-color: var(--color-accent);
+	background-color: var(--color-grid-subtle);
+}
+
+.quiz-buttons .submit-btn {
+	background-color: var(--color-accent);
+	color: var(--bg-base);
+	border-color: var(--color-accent);
+}
+
+.quiz-buttons .submit-btn:hover {
+	opacity: 0.88;
+	transform: translateY(-1px);
+	box-shadow: var(--shadow-md);
+}
+
+/* Score / completion card */
+.quiz-result {
+	text-align: center;
+	padding: 40px 24px;
+	background-color: var(--bg-surface);
+	border: 1px solid var(--color-grid);
+	border-radius: 12px;
+	animation: slideUp 0.4s var(--easing-smooth);
+}
+
+.quiz-result .score {
+	font-size: 48px;
+	font-weight: 800;
+	color: var(--color-accent);
+	line-height: 1;
+	margin-bottom: 12px;
+}
+
+[data-theme="dark"] .quiz-result .score {
+	text-shadow: var(--bar-mid-glow);
+}
+
+.quiz-result .message {
+	font-size: 18px;
+	color: var(--text-primary);
+	margin-bottom: 24px;
+}
+
+/* --------------------------------------------------------------------------
+   10. Complexity Section
+   -------------------------------------------------------------------------- */
+
+.complexity-comparison {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 16px;
+	margin-bottom: 24px;
+}
+
+.complexity-chart {
+	background-color: var(--bg-surface);
+	border: 1px solid var(--color-grid);
+	border-radius: 12px;
+	padding: 20px;
+	box-shadow: var(--shadow-sm);
+}
+
+.chart-title {
+	font-size: 14px;
+	font-weight: 700;
+	margin-bottom: 14px;
+	color: var(--text-primary);
+	font-family: var(--font-mono);
+}
+
+.chart-bar-container {
+	display: flex;
+	align-items: flex-end;
+	justify-content: center;
+	gap: 8px;
+	height: 140px;
+}
+
+.chart-bar {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+}
+
+.chart-bar-item {
+	width: 36px;
+	background: linear-gradient(
+		to top,
+		var(--color-accent),
+		var(--color-accent-glow)
+	);
+	border-radius: 4px 4px 0 0;
+	transition: height 0.5s var(--easing-smooth);
+}
+
+[data-theme="dark"] .chart-bar-item {
+	box-shadow: 0 0 10px rgba(136, 204, 255, 0.3);
+}
+
+.chart-bar-item.secondary {
+	background: linear-gradient(to top, var(--bar-in-range), var(--color-grid));
+}
+
+.chart-bar-label {
+	font-size: 11px;
+	color: var(--text-secondary);
+	white-space: nowrap;
+	font-family: var(--font-mono);
+}
+
+/* Complexity table */
+.complexity-table {
+	width: 100%;
+	border-collapse: collapse;
+	background-color: var(--bg-surface);
+	border: 1px solid var(--color-grid);
+	border-radius: 12px;
+	overflow: hidden;
+	margin-bottom: 24px;
+	box-shadow: var(--shadow-sm);
+}
+
+.complexity-table th,
+.complexity-table td {
+	padding: 12px 16px;
+	text-align: left;
+	border-bottom: 1px solid var(--color-border);
+	font-size: 14px;
+}
+
+.complexity-table th {
+	background-color: var(--bg-code);
+	font-weight: 700;
+	color: var(--text-primary);
+	font-size: 13px;
+	letter-spacing: 0.3px;
+	text-transform: uppercase;
+}
+
+.complexity-table td {
+	color: var(--text-secondary);
+}
+
+.complexity-table td:first-child {
+	color: var(--text-primary);
+	font-weight: 500;
+}
+
+.complexity-table tr:last-child td {
+	border-bottom: none;
+}
+
+.complexity-table tr:hover td {
+	background-color: var(--color-grid-subtle);
+}
+
+/* O-notation highlight */
+.o-notation {
+	font-family: var(--font-mono);
+	color: var(--color-accent);
+	font-weight: 600;
+}
+
+[data-theme="dark"] .o-notation {
+	text-shadow: 0 0 8px rgba(136, 204, 255, 0.4);
+}
+
+/* Use cases box */
+.use-cases {
+	background-color: var(--bg-surface);
+	border: 1px solid var(--color-grid);
+	border-radius: 12px;
+	padding: 20px;
+	margin-top: 24px;
+	box-shadow: var(--shadow-sm);
+}
+
+.use-cases h3 {
+	font-size: 15px;
+	font-weight: 700;
+	margin-bottom: 14px;
+	color: var(--text-primary);
+}
+
+.use-cases ul {
+	list-style: none;
+	padding: 0;
+}
+
+.use-cases li {
+	padding: 10px 0;
+	color: var(--text-secondary);
+	border-bottom: 1px solid var(--color-border);
+	font-size: 14px;
+	line-height: 1.5;
+	transition: color 0.2s var(--easing-smooth);
+}
+
+.use-cases li:hover {
+	color: var(--text-primary);
+}
+
+.use-cases li:last-child {
+	border-bottom: none;
+}
+
+.use-cases li::before {
+	content: "→ ";
+	color: var(--color-accent);
+	font-family: var(--font-mono);
+}
+
+/* --------------------------------------------------------------------------
+   11. Utility / Shared Components
+   -------------------------------------------------------------------------- */
+
+/* Badge / tag */
+.badge {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 4px;
+	font-size: 11px;
+	font-weight: 700;
+	font-family: var(--font-mono);
+	letter-spacing: 0.5px;
+	background-color: var(--color-grid-subtle);
+	color: var(--color-accent);
+	border: 1px solid var(--color-grid);
+}
+
+/* Divider */
+.divider {
+	border: none;
+	border-top: 1px solid var(--color-border);
+	margin: 24px 0;
+}
+
+/* Step description text */
+.step-description,
+#step-desc {
+	font-size: 14px;
+	color: var(--text-secondary);
+	line-height: 1.7;
+	padding: 12px 0;
+}
+
+.step-description strong,
+#step-desc strong {
+	color: var(--color-accent);
+	font-family: var(--font-mono);
+}
+
+/* --------------------------------------------------------------------------
+   12. Responsive Design
+   -------------------------------------------------------------------------- */
+
+/* Tablet: 768px – 1023px */
+@media (max-width: 1023px) {
+	:root {
+		--header-height: 56px;
+		--section-pad-x: 16px;
+		--section-pad-y: 24px;
+	}
+
+	.visualization-container {
+		display: grid;
+		grid-template-columns: 1fr;
+		grid-template-rows: auto auto;
+		gap: 12px;
+	}
+
+	.array-container {
+		height: 50vh;
+	}
+
+	.code-panel-wrapper {
+		height: 35vh;
+		max-height: 35vh;
+	}
+
+	main {
+		top: var(--header-height);
+		bottom: var(--footer-height);
+	}
+
+	.complexity-comparison {
+		grid-template-columns: 1fr;
+	}
+
+	/* Tablet: ensure purple slider on all breakpoints */
+	#speed-slider,
+	#speed-slider-footer,
+	.speed-slider {
+		-webkit-appearance: none;
+		appearance: none;
+		background: linear-gradient(to right, #7b3fa0, rgba(123, 63, 160, 0.35));
+	}
+
+	#speed-slider::-webkit-slider-thumb,
+	#speed-slider-footer::-webkit-slider-thumb,
+	.speed-slider::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		appearance: none;
+		background-color: #7b3fa0;
+	}
+
+	#speed-slider::-moz-range-thumb,
+	#speed-slider-footer::-moz-range-thumb,
+	.speed-slider::-moz-range-thumb {
+		background-color: #7b3fa0;
+		border: none;
+	}
+}
+
+/* Mobile: ≤767px */
+@media (max-width: 767px) {
+	:root {
+		--header-height: 52px;
+		--footer-height: 56px;
+		--section-pad-x: 12px;
+		--section-pad-y: 16px;
+	}
+
+	body {
+		background-image: none; /* remove grid on mobile for performance */
+	}
+
+	header {
+		padding: 0 12px;
+	}
+
+	header h1 {
+		font-size: 16px;
+	}
+
+	.step-indicator {
+		margin: 0 8px;
+		gap: 6px;
+	}
+
+	.progress-bar-container {
+		width: 80px;
+	}
+
+	.step-text {
+		font-size: 12px;
+	}
+
+	.visualization-container {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.array-container {
+		height: 40vh;
+		flex-shrink: 0;
+		border-radius: 8px;
+		padding: 12px;
+	}
+
+	.code-panel-wrapper {
+		height: 30vh;
+		flex-shrink: 0;
+		border-radius: 8px;
+		max-height: 30vh;
+	}
+
+	.code-panel {
+		font-size: 12px;
+	}
+
+	.section h1 {
+		font-size: 22px;
+	}
+
+	.section h2 {
+		font-size: 18px;
+	}
+
+	.analogy-cards {
+		grid-template-columns: 1fr;
+		gap: 10px;
+	}
+
+	.complexity-comparison {
+		grid-template-columns: 1fr;
+	}
+
+	footer {
+		padding: 6px 8px;
+		gap: 4px;
+	}
+
+	footer button {
+		padding: 8px 10px;
+		font-size: 14px;
+		min-width: 40px;
+		min-height: 40px;
+	}
+
+	#speed-slider,
+	#speed-slider-footer,
+	.speed-slider {
+		width: 100px;
+		-webkit-appearance: none;
+		appearance: none;
+		background: linear-gradient(to right, #7b3fa0, rgba(123, 63, 160, 0.35));
+	}
+
+	#speed-slider::-webkit-slider-thumb,
+	#speed-slider-footer::-webkit-slider-thumb,
+	.speed-slider::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		appearance: none;
+		width: 16px;
+		height: 16px;
+		border-radius: 50%;
+		background-color: #7b3fa0;
+		cursor: pointer;
+	}
+
+	#speed-slider::-moz-range-thumb,
+	#speed-slider-footer::-moz-range-thumb,
+	.speed-slider::-moz-range-thumb {
+		background-color: #7b3fa0;
+		border: none;
+	}
+
+	.speed-control label {
+		display: none; /* hide text label, keep slider */
+	}
+
+	#quiz-container {
+		max-width: 100%;
+	}
+
+	.question-text {
+		font-size: 15px;
+	}
+
+	.quiz-option {
+		padding: 10px 12px;
+	}
+
+	.complexity-table th,
+	.complexity-table td {
+		padding: 10px 12px;
+		font-size: 13px;
+	}
+}
+
+/* Very small screens */
+@media (max-width: 380px) {
+	:root {
+		--header-height: 48px;
+	}
+
+	header h1 {
+		font-size: 14px;
+	}
+
+	footer button {
+		min-width: 36px;
+		min-height: 36px;
+		font-size: 13px;
+		padding: 6px 8px;
+	}
+}
+
+/* --------------------------------------------------------------------------
+   13. Animations & Keyframes
+   -------------------------------------------------------------------------- */
+
+/* Fade in — section transitions (cassie.codes smooth scroll feel) */
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+/* Slide up — cards, quiz questions */
+@keyframes slideUp {
+	from {
+		opacity: 0;
+		transform: translateY(20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+/* Slide in from left — pointers */
+@keyframes slideInLeft {
+	from {
+		opacity: 0;
+		transform: translateX(-12px);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+
+/* Pulse — mid bar neon glow (bruno-simon inspired) */
+@keyframes pulse {
+	0%,
+	100% {
+		opacity: 0.4;
+		transform: scaleX(1);
+	}
+	50% {
+		opacity: 0;
+		transform: scaleX(1.04);
+	}
+}
+
+/* Blinking cursor — strml.net typing effect */
+@keyframes blink-cursor {
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0;
+	}
+}
+
+/* Neon glow flicker — for found state celebration */
+@keyframes glowFlicker {
+	0%,
+	100% {
+		box-shadow: var(--bar-found-glow);
+	}
+	30% {
+		box-shadow:
+			0 0 24px var(--color-success),
+			0 0 48px rgba(79, 200, 120, 0.5);
+	}
+	60% {
+		box-shadow: var(--bar-found-glow);
+	}
+}
+
+.bar.found {
+	animation: glowFlicker 1.5s var(--easing-smooth) 2;
+}
+
+/* Shake animation — wrong quiz answer */
+@keyframes shake {
+	0%,
+	100% {
+		transform: translateX(0);
+	}
+	20% {
+		transform: translateX(-6px);
+	}
+	40% {
+		transform: translateX(6px);
+	}
+	60% {
+		transform: translateX(-4px);
+	}
+	80% {
+		transform: translateX(4px);
+	}
+}
+
+.quiz-option--wrong {
+	animation: shake 0.4s var(--easing-sharp);
+}
+
+/* Scale pop — correct answer */
+@keyframes scalePop {
+	0% {
+		transform: scale(1);
+	}
+	40% {
+		transform: scale(1.04);
+	}
+	100% {
+		transform: scale(1);
+	}
+}
+
+.quiz-option--correct {
+	animation: scalePop 0.35s var(--easing-bounce);
+}
+
+/* Stagger animation helper classes */
+.anim-delay-1 {
+	animation-delay: 0.05s;
+}
+.anim-delay-2 {
+	animation-delay: 0.1s;
+}
+.anim-delay-3 {
+	animation-delay: 0.15s;
+}
+
+/* --------------------------------------------------------------------------
+   14. Dark mode grid background (explicit override)
+      Bruno Simon: isometric grid of subtle lines + purple X dot markers
+   -------------------------------------------------------------------------- */
+
+[data-theme="dark"] body {
+	background-color: var(--bg-base);
+	/* Horizontal grid lines */
+	background-image:
+		linear-gradient(rgba(123, 63, 160, 0.18) 1px, transparent 1px),
+		/* Vertical grid lines */
+		linear-gradient(90deg, rgba(123, 63, 160, 0.18) 1px, transparent 1px);
+	background-size: 40px 40px;
+	background-position: center center;
+}
+
+/* Light mode: no texture, clean white */
+[data-theme="light"] body {
+	background-image: none;
+	background-color: var(--bg-base);
+}
+
+/* --------------------------------------------------------------------------
+   15. Focus / accessibility
+   -------------------------------------------------------------------------- */
+
+:focus-visible {
+	outline: 2px solid var(--color-accent);
+	outline-offset: 2px;
+	border-radius: 4px;
+}
+
+button:focus-visible,
+.quiz-option:focus-visible,
+.code-tab:focus-visible,
+.nav-tab:focus-visible {
+	outline: 2px solid var(--color-accent);
+	outline-offset: 2px;
+}
+
+/* High-contrast mode support */
+@media (forced-colors: active) {
+	.bar {
+		border: 1px solid ButtonText;
+	}
+
+	.bar.mid {
+		border-color: Highlight;
+	}
+}
+
+/* --------------------------------------------------------------------------
+   16. Print styles
+   -------------------------------------------------------------------------- */
+
+@media print {
+	header,
+	footer,
+	.controls,
+	#theme-toggle,
+	#speed-slider {
+		display: none;
+	}
+
+	main {
+		position: static;
+		overflow: visible;
+	}
+
+	body {
+		background-image: none;
+		color: #000;
+	}
+
+	.section {
+		display: block;
+		page-break-after: always;
+	}
+}
+
+</style>
+</head>
+<body data-theme="dark">
+	<header id="header" role="banner">
+		<h1>이진탐색 튜토리얼</h1>
+	</header>
+
+	<main id="main" role="main">
+		<!-- Section 1: Concept Introduction -->
+		<section id="intro" class="section active" role="region" aria-labelledby="intro-heading">
+			<h1 id="intro-heading">이진탐색 (Binary Search)</h1>
+
+			<div class="intro-question" role="note" aria-label="개념 소개 질문">
+				💡 1부터 100 사이의 숫자를 최소 횟수로 찾을 수 있을까요?
+			</div>
+
+			<p>이진탐색은 정렬된 배열에서 특정 값을 빠르게 찾는 알고리즘입니다. 매번 탐색 범위를 절반으로 줄여나가며 진행합니다.</p>
+
+			<div class="analogy-cards" role="region" aria-label="이진탐색 비유 예시들">
+				<div class="analogy-card">
+					<div class="emoji">📖</div>
+					<div class="title">전화번호부</div>
+					<div class="desc">특정 이름을 찾기 위해 페이지를 절반씩 열어가며 탐색</div>
+				</div>
+				<div class="analogy-card">
+					<div class="emoji">🔢</div>
+					<div class="title">숫자 맞추기 게임</div>
+					<div class="desc">"더 높아", "더 낮아"를 반복하며 숫자 범위를 좁혀감</div>
+				</div>
+				<div class="analogy-card">
+					<div class="emoji">🔮</div>
+					<div class="title">아키나토르</div>
+					<div class="desc">이진 질문으로 가능성을 계속 반으로 나누어 정답 도출</div>
+				</div>
+			</div>
+
+			<div class="callout-box">
+				⚡ <strong>핵심 전제</strong>: 배열이 정렬되어 있어야 합니다!
+			</div>
+
+			<div class="definition-box">
+				<strong>정의:</strong> 이진탐색은 정렬된 배열을 두 부분으로 나누어 탐색 범위를 지수적으로 감소시키는 분할 정복 알고리즘입니다.
+				결과적으로 선형탐색 대비 O(n)에서 O(log n)으로 시간복잡도를 획기적으로 단축합니다.
+			</div>
+
+			<button id="start-btn" aria-label="이진탐색 시뮬레이션 시작">시작하기 →</button>
+		</section>
+
+		<!-- Section 2: Visualization -->
+		<section id="visualization" class="section" role="region" aria-labelledby="viz-heading">
+			<h2 id="viz-heading">인터랙티브 시각화</h2>
+
+			<div class="search-target" id="search-target">찾는 값: <strong>28</strong></div>
+			<div class="visualization-container">
+				<div class="array-container" aria-live="polite" aria-atomic="true" role="region" aria-label="배열 시각화">
+					<div class="pointer-container"></div>
+					<div class="bars-row" id="array-bars"></div>
+					<div class="info-panel" id="info-panel" aria-live="polite" role="status" aria-label="시뮬레이션 상태 정보">
+						<strong>대기 중...</strong> "시작하기"를 클릭하거나 하단 컨트롤로 진행하세요.
+					</div>
+				</div>
+
+				<div class="code-panel-wrapper" role="region" aria-label="코드 표시">
+					<div class="tab-bar">
+						<button class="code-tab active" data-mode="iterative" aria-label="반복형 (Iterative) 코드 탭">반복형 (Iterative)</button>
+						<button class="code-tab" data-mode="recursive" aria-label="재귀형 (Recursive) 코드 탭">재귀형 (Recursive)</button>
+					</div>
+					<pre class="code-panel" id="code-panel" role="region" aria-live="polite" aria-label="알고리즘 코드 표시"><code id="code-content">
+function binarySearch(arr, target) {
+  let low = 0;
+  let high = arr.length - 1;
+
+  while (low <= high) {
+    let mid = low + Math.floor((high - low) / 2);
+
+    if (arr[mid] === target) {
+      return mid;
+    } else if (arr[mid] < target) {
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+
+  return -1;
+}
+					</code></pre>
+				</div>
+			</div>
+
+			</section>
+
+		<!-- Section 3: Code Implementation -->
+		<section id="code" class="section" role="region" aria-labelledby="code-heading">
+			<h2 id="code-heading">코드 구현</h2>
+
+			<div class="visualization-container">
+				<div class="array-container">
+					<div class="pointer-container">
+						<div class="pointer pointer--low" id="ptr-low-code">
+							<div class="pointer-arrow">↓</div>
+							<div class="pointer-label">low</div>
+						</div>
+						<div class="pointer pointer--mid" id="ptr-mid-code">
+							<div class="pointer-arrow">↓</div>
+							<div class="pointer-label">mid</div>
+						</div>
+						<div class="pointer pointer--high" id="ptr-high-code">
+							<div class="pointer-arrow">↓</div>
+							<div class="pointer-label">high</div>
+						</div>
+					</div>
+					<div class="bars-row" id="array-bars-code"></div>
+					<div class="info-panel" id="info-panel-code">
+						<strong>준비 중...</strong> 코드를 따라가며 각 단계를 이해해보세요.
+					</div>
+				</div>
+
+				<div class="code-panel-wrapper">
+					<div class="tab-bar">
+						<button class="code-tab active" data-mode="iterative" aria-label="반복형 (Iterative) 코드 탭">반복형 (Iterative)</button>
+						<button class="code-tab" data-mode="recursive" aria-label="재귀형 (Recursive) 코드 탭">재귀형 (Recursive)</button>
+					</div>
+					<pre class="code-panel" id="code-panel-code" role="region" aria-live="polite" aria-label="알고리즘 코드 표시"><code id="code-content-code">
+function binarySearch(arr, target) {
+  let low = 0;
+  let high = arr.length - 1;
+
+  while (low <= high) {
+    let mid = low + Math.floor((high - low) / 2);
+
+    if (arr[mid] === target) {
+      return mid;
+    } else if (arr[mid] < target) {
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+
+  return -1;
+}
+					</code></pre>
+				</div>
+			</div>
+		</section>
+
+		<!-- Section 4: Quiz -->
+		<section id="quiz" class="section" role="form" aria-labelledby="quiz-heading">
+			<h2 id="quiz-heading">퀴즈</h2>
+
+			<div id="quiz-container" role="group" aria-label="퀴즈 질문들">
+				<div class="question-card">
+					<div class="quiz-progress">문제 1/4</div>
+					<div class="question-text">이진탐색의 시간복잡도는?</div>
+					<div class="quiz-options">
+						<div class="quiz-option">
+							<input type="radio" id="opt1" name="q1" value="a">
+							<label for="opt1">O(log n)</label>
+						</div>
+						<div class="quiz-option">
+							<input type="radio" id="opt2" name="q1" value="b">
+							<label for="opt2">O(n)</label>
+						</div>
+						<div class="quiz-option">
+							<input type="radio" id="opt3" name="q1" value="c">
+							<label for="opt3">O(n²)</label>
+						</div>
+						<div class="quiz-option">
+							<input type="radio" id="opt4" name="q1" value="d">
+							<label for="opt4">O(2^n)</label>
+						</div>
+					</div>
+					<div class="quiz-feedback" id="feedback1"></div>
+					<div class="quiz-buttons">
+						<button class="hint-btn" aria-label="현재 질문에 대한 힌트">💡 힌트</button>
+						<button class="submit-btn" aria-label="선택한 답변 제출">제출</button>
+					</div>
+				</div>
+
+				<div id="quiz-score" style="text-align: center; font-size: 14px; color: var(--text-secondary); margin-top: 24px;">
+					점수: 0/4
+				</div>
+			</div>
+		</section>
+
+		<!-- Section 5: Complexity Analysis -->
+		<section id="complexity" class="section" role="region" aria-labelledby="complexity-heading">
+			<h2 id="complexity-heading">시간 복잡도 분석</h2>
+
+			<div class="complexity-comparison" role="region" aria-label="선형탐색과 이진탐색 시간복잡도 비교">
+				<div class="complexity-chart">
+					<div class="chart-title">선형 탐색 O(n)</div>
+					<div class="chart-bar-container">
+						<div class="chart-bar">
+							<div class="chart-bar-item" style="height: 100%;"></div>
+							<div class="chart-bar-label">2,540,000 회</div>
+						</div>
+					</div>
+				</div>
+				<div class="complexity-chart">
+					<div class="chart-title">이진 탐색 O(log n)</div>
+					<div class="chart-bar-container">
+						<div class="chart-bar">
+							<div class="chart-bar-item" style="height: 5%;"></div>
+							<div class="chart-bar-label">22 회</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<table class="complexity-table" role="table" aria-label="시간복잡도 분석 표">
+				<thead>
+					<tr>
+						<th>경우</th>
+						<th>시간복잡도</th>
+						<th>설명</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>Best Case</td>
+						<td>O(1)</td>
+						<td>첫 번째 비교에서 찾은 경우</td>
+					</tr>
+					<tr>
+						<td>Average Case</td>
+						<td>O(log n)</td>
+						<td>평균적인 탐색 비용</td>
+					</tr>
+					<tr>
+						<td>Worst Case</td>
+						<td>O(log n)</td>
+						<td>끝까지 찾지 못하는 경우</td>
+					</tr>
+				</tbody>
+			</table>
+
+			<div class="use-cases">
+				<h3>🚀 실전 응용</h3>
+				<ul>
+					<li><strong>Git Bisect</strong> - 버그를 도입한 커밋 찾기</li>
+					<li><strong>Database B-tree</strong> - 인덱싱된 데이터 검색</li>
+					<li><strong>Java Collections.binarySearch()</strong> - 표준 라이브러리</li>
+					<li><strong>Python bisect 모듈</strong> - 정렬된 시퀀스 검색</li>
+					<li><strong>STL lower_bound/upper_bound</strong> - C++ 범위 탐색</li>
+				</ul>
+			</div>
+		</section>
+	</main>
+
+	<footer id="controls">
+		<button id="prev-btn-footer" title="이전 단계" aria-label="이전 단계 (좌측 화살표)">◀</button>
+		<button id="play-btn-footer" title="재생/일시정지" aria-label="시뮬레이션 재생 또는 일시정지">▶</button>
+		<button id="next-btn-footer" title="다음 단계" aria-label="다음 단계 (우측 화살표)">▶</button>
+		<div class="speed-control">
+			<label for="speed-slider-footer">속도:</label>
+			<input type="range" id="speed-slider-footer" min="0.5" max="3" step="0.1" value="1.5">
+		</div>
+		<button id="reset-btn-footer" title="리셋" aria-label="알고리즘 시뮬레이션 초기화">↺</button>
+	</footer>
+
+	<script>// 이진탐색 엔진: 알고리즘 실행 및 단계 기록
+class BinarySearchEngine {
+	constructor() {
+		this.steps = [];
+	}
+
+	run(array, target) {
+		this.steps = [];
+		return this._binarySearchIterative(array, target);
+	}
+
+	_binarySearchIterative(array, target) {
+		let low = 0;
+		let high = array.length - 1;
+		let stepIndex = 0;
+
+		// 초기 상태
+		let mid = low + Math.floor((high - low) / 2);
+		this.steps.push({
+			stepIndex: stepIndex++,
+			array: [...array],
+			low,
+			high,
+			mid,
+			comparison: "start",
+			result: "searching",
+			sourceCodeLine: 0,
+			description: `초기 상태: low=${low}, high=${high}, mid=${mid}에서 탐색 시작`,
+		});
+
+		while (low <= high) {
+			mid = low + Math.floor((high - low) / 2);
+			let comparison = "start";
+			let result = "searching";
+			let description = "";
+			let sourceCodeLine = 4;
+
+			if (array[mid] === target) {
+				comparison = "equal";
+				result = "found";
+				sourceCodeLine = 5;
+				description = `발견! arr[${mid}]=${array[mid]} === ${target}`;
+			} else if (array[mid] < target) {
+				comparison = "less";
+				sourceCodeLine = 8;
+				low = mid + 1;
+				description = `arr[${mid}]=${array[mid]} < ${target} → 오른쪽 탐색 (low=${low})`;
+			} else {
+				comparison = "greater";
+				sourceCodeLine = 10;
+				high = mid - 1;
+				description = `arr[${mid}]=${array[mid]} > ${target} → 왼쪽 탐색 (high=${high})`;
+			}
+
+			this.steps.push({
+				stepIndex: stepIndex++,
+				array: [...array],
+				low,
+				high,
+				mid,
+				comparison,
+				result,
+				sourceCodeLine,
+				description,
+			});
+
+			if (result === "found") {
+				return { found: true, index: mid, steps: this.steps };
+			}
+		}
+
+		return { found: false, index: -1, steps: this.steps };
+	}
+
+	_binarySearchRecursive(array, target, low, high, steps) {
+		if (low > high) {
+			return -1;
+		}
+		const mid = low + Math.floor((high - low) / 2);
+		if (array[mid] === target) {
+			return mid;
+		} else if (array[mid] < target) {
+			return this._binarySearchRecursive(array, target, mid + 1, high, steps);
+		} else {
+			return this._binarySearchRecursive(array, target, low, mid - 1, steps);
+		}
+	}
+}
+
+// 배열 바 시각화
+class Visualizer {
+	constructor(containerId) {
+		this.containerId = containerId;
+		this.container = document.getElementById(containerId);
+		this.bars = [];
+		// 포인터 컨테이너는 같은 부모(.array-container) 안의 첫 번째 것을 사용
+		this.pointerContainer = this.container
+			? this.container
+					.closest(".array-container")
+					?.querySelector(".pointer-container") ||
+				document.querySelector("#visualization .pointer-container")
+			: null;
+		this.lowPointer = null;
+		this.midPointer = null;
+		this.highPointer = null;
+	}
+
+	init(array) {
+		// 기존 바 제거
+		this.container.innerHTML = "";
+		this.bars = [];
+
+		// 최대값 기준 높이 정규화
+		const maxVal = Math.max(...array);
+		const containerHeight = this.container.offsetHeight - 40;
+
+		// 각 원소별 바 생성
+		array.forEach((val, idx) => {
+			const barHeight = (val / maxVal) * containerHeight;
+			const barDiv = document.createElement("div");
+			barDiv.className = "bar";
+			barDiv.setAttribute("data-index", idx);
+
+			// Safe DOM creation instead of innerHTML
+			const label = document.createElement("span");
+			label.className = "bar-label";
+			label.textContent = val;
+			barDiv.appendChild(label);
+
+			barDiv.style.height = `${barHeight}px`;
+
+			this.container.appendChild(barDiv);
+			this.bars.push(barDiv);
+		});
+
+		// 포인터 컨테이너 초기화 (HTML 기존 요소를 재사용하거나 새로 생성)
+		if (this.pointerContainer) {
+			this.pointerContainer.innerHTML = "";
+			const pointerDefs = [
+				{ label: "low", cls: "pointer--low", id: "ptr-low-dyn" },
+				{ label: "mid", cls: "pointer--mid", id: "ptr-mid-dyn" },
+				{ label: "high", cls: "pointer--high", id: "ptr-high-dyn" },
+			];
+			pointerDefs.forEach((def) => {
+				const ptr = document.createElement("div");
+				ptr.className = `pointer ${def.cls}`;
+				ptr.id = def.id;
+
+				// Safe DOM creation instead of innerHTML
+				const arrow = document.createElement("div");
+				arrow.className = "pointer-arrow";
+				arrow.textContent = "↓";
+				ptr.appendChild(arrow);
+
+				const labelEl = document.createElement("div");
+				labelEl.className = "pointer-label";
+				labelEl.textContent = def.label;
+				ptr.appendChild(labelEl);
+
+				this.pointerContainer.appendChild(ptr);
+			});
+
+			this.lowPointer = this.pointerContainer.querySelector(".pointer--low");
+			this.midPointer = this.pointerContainer.querySelector(".pointer--mid");
+			this.highPointer = this.pointerContainer.querySelector(".pointer--high");
+		}
+
+		this.reset();
+	}
+
+	update(step) {
+		// 모든 바 초기화
+		this.bars.forEach((bar) => {
+			bar.classList.remove(
+				"bar--in-range",
+				"bar--mid",
+				"bar--eliminated",
+				"bar--found",
+			);
+		});
+
+		if (step.result === "found") {
+			// 찾은 바만 초록, 나머지 전부 eliminated
+			this.bars.forEach((bar, i) => {
+				if (i === step.mid) {
+					bar.classList.add("bar--found");
+				} else {
+					bar.classList.add("bar--eliminated");
+				}
+			});
+		} else {
+			// 탐색 범위 강조
+			for (let i = step.low; i <= step.high; i++) {
+				this.bars[i].classList.add("bar--in-range");
+			}
+
+			// Mid 포인터 강조
+			if (step.mid >= 0 && step.mid < this.bars.length) {
+				this.bars[step.mid].classList.add("bar--mid");
+			}
+
+			// 제외 범위
+			for (let i = 0; i < step.low; i++) {
+				this.bars[i].classList.add("bar--eliminated");
+			}
+			for (let i = step.high + 1; i < this.bars.length; i++) {
+				this.bars[i].classList.add("bar--eliminated");
+			}
+		}
+
+		// 포인터 위치 업데이트
+		this.updatePointers(step.low, step.mid, step.high);
+	}
+
+	updatePointers(low, mid, high) {
+		if (!this.pointerContainer) return;
+
+		const containerWidth = this.container.offsetWidth;
+		const n = this.bars.length;
+		if (n === 0 || containerWidth === 0) return;
+
+		const barWidth = containerWidth / n;
+		const halfBar = barWidth / 2;
+
+		// 바 중앙 위치 (translateX(-50%)로 포인터 자체를 센터링)
+		const posOf = (idx) => idx * barWidth + halfBar;
+
+		// 같은 인덱스 포인터는 라벨 합치기, 근접하면 가로 밀기
+		const minGap = 45;
+
+		// 같은 인덱스끼리 그룹화
+		const groups = {};
+		const entries = [
+			{ ptr: this.lowPointer, idx: low, name: "low" },
+			{ ptr: this.midPointer, idx: mid, name: "mid" },
+			{ ptr: this.highPointer, idx: high, name: "high" },
+		];
+		for (const e of entries) {
+			if (!groups[e.idx]) groups[e.idx] = [];
+			groups[e.idx].push(e);
+		}
+
+		// 모든 포인터 숨기기
+		entries.forEach((e) => {
+			e.ptr.classList.remove("active");
+			e.ptr.style.display = "none";
+			e.ptr.style.top = "";
+		});
+
+		// 그룹별로 대표 포인터만 표시, 라벨 합침
+		const visiblePtrs = [];
+		for (const idx in groups) {
+			const group = groups[idx];
+			const repr = group[0]; // 대표
+			const mergedLabel = group.map((g) => g.name).join("/");
+			const labelEl = repr.ptr.querySelector(".pointer-label");
+			if (labelEl) labelEl.textContent = mergedLabel;
+			repr.ptr.style.display = "";
+			repr.ptr.style.left = posOf(Number(idx)) + "px";
+			repr.ptr.style.top = "0px";
+			repr.ptr.classList.add("active");
+			visiblePtrs.push({ ptr: repr.ptr, pos: posOf(Number(idx)) });
+
+			// 나머지는 숨김 유지
+			for (let i = 1; i < group.length; i++) {
+				group[i].ptr.classList.remove("active");
+			}
+		}
+
+		// 근접한 포인터 가로 밀기
+		visiblePtrs.sort((a, b) => a.pos - b.pos);
+		for (let i = 1; i < visiblePtrs.length; i++) {
+			if (visiblePtrs[i].pos - visiblePtrs[i - 1].pos < minGap) {
+				visiblePtrs[i].pos = visiblePtrs[i - 1].pos + minGap;
+				visiblePtrs[i].ptr.style.left = visiblePtrs[i].pos + "px";
+			}
+		}
+
+		// 오른쪽 끝에서 라벨이 잘리지 않도록 위치 보정
+		// translateX(-50%) 적용되므로 pos + 라벨절반 > containerWidth면 잘림
+		visiblePtrs.forEach((p) => {
+			const labelEl = p.ptr.querySelector(".pointer-label");
+			const halfLabel = labelEl ? (labelEl.textContent.length * 7) / 2 : 15;
+			if (p.pos + halfLabel > containerWidth) {
+				p.pos = containerWidth - halfLabel - 2;
+				p.ptr.style.left = p.pos + "px";
+			}
+			// 왼쪽 끝도 체크
+			if (p.pos - halfLabel < 0) {
+				p.pos = halfLabel + 2;
+				p.ptr.style.left = p.pos + "px";
+			}
+		});
+
+		// 컨테이너 높이 리셋
+		if (this.pointerContainer) {
+			this.pointerContainer.style.height = "48px";
+		}
+
+		if (this.lowPointer) this.lowPointer.classList.add("active");
+		if (this.midPointer) this.midPointer.classList.add("active");
+		if (this.highPointer) this.highPointer.classList.add("active");
+	}
+
+	reset() {
+		this.bars.forEach((bar) => {
+			bar.classList.remove(
+				"bar--in-range",
+				"bar--mid",
+				"bar--eliminated",
+				"bar--found",
+			);
+		});
+		this.updatePointers(0, 0, this.bars.length - 1);
+	}
+}
+
+// 코드 패널: 반복형/재귀형 코드 표시 및 하이라이팅
+class CodePanel {
+	constructor(containerId) {
+		this.container = document.getElementById(containerId);
+		this.mode = "iterative";
+		this.iterativeLines = [
+			"function binarySearch(arr, target) {",
+			"  let low = 0;",
+			"  let high = arr.length - 1;",
+			"  while (low <= high) {",
+			"    let mid = low + Math.floor((high - low) / 2);",
+			"    if (arr[mid] === target) {",
+			"      return mid;              // ← 발견!",
+			"    } else if (arr[mid] < target) {",
+			"      low = mid + 1;           // ← 오른쪽 탐색",
+			"    } else {",
+			"      high = mid - 1;          // ← 왼쪽 탐색",
+			"    }",
+			"  }",
+			"  return -1;                    // ← 미발견",
+			"}",
+		];
+		this.recursiveLines = [
+			"function binarySearchRecursive(arr, target, low, high) {",
+			"  if (low > high) {",
+			"    return -1;                  // ← 기저 조건",
+			"  }",
+			"  let mid = low + Math.floor((high - low) / 2);",
+			"  if (arr[mid] === target) {",
+			"    return mid;                 // ← 발견!",
+			"  } else if (arr[mid] < target) {",
+			"    return binarySearchRecursive(arr, target, mid + 1, high);",
+			"  } else {",
+			"    return binarySearchRecursive(arr, target, low, mid - 1);",
+			"  }",
+			"}",
+		];
+		this.currentHighlight = -1;
+		this.codeLines = [];
+		this.isFirstVisit = true;
+	}
+
+	init() {
+		this.renderCode();
+	}
+
+	renderCode() {
+		this.container.textContent = "";
+
+		this.codeLines =
+			this.mode === "iterative" ? this.iterativeLines : this.recursiveLines;
+
+		this.codeLines.forEach((line, idx) => {
+			const lineDiv = document.createElement("div");
+			lineDiv.className = "code-line";
+			lineDiv.setAttribute("data-line", idx);
+
+			const lineNumber = document.createElement("span");
+			lineNumber.className = "line-number";
+			lineNumber.textContent = (idx + 1) + " ";
+			lineDiv.appendChild(lineNumber);
+
+			const lineText = document.createElement("span");
+			lineText.className = "line-text";
+			lineText.textContent = line;
+			lineDiv.appendChild(lineText);
+
+			this.container.appendChild(lineDiv);
+		});
+
+		// HTML의 기존 탭 버튼에 이벤트 바인딩
+		const wrapper = this.container.closest(".code-panel-wrapper");
+		if (wrapper) {
+			const tabs = wrapper.querySelectorAll(".code-tab");
+			tabs.forEach((tab) => {
+				tab.addEventListener("click", () => {
+					const mode = tab.getAttribute("data-mode");
+					if (mode) this.switchMode(mode);
+					tabs.forEach((t) => t.classList.remove("active"));
+					tab.classList.add("active");
+				});
+			});
+		}
+	}
+
+	switchMode(mode) {
+		this.mode = mode;
+		this.codeLines =
+			mode === "iterative" ? this.iterativeLines : this.recursiveLines;
+		this.renderCode();
+		this.highlightLine(this.currentHighlight);
+	}
+
+	highlightLine(lineIndex) {
+		// 기존 하이라이트 제거
+		this.container.querySelectorAll(".code-line.active").forEach((line) => {
+			line.classList.remove("active");
+		});
+
+		// 새 줄 하이라이트
+		if (lineIndex >= 0 && lineIndex < this.codeLines.length) {
+			const lineEl = this.container.querySelector(`[data-line="${lineIndex}"]`);
+			if (lineEl) {
+				lineEl.classList.add("active");
+				this.currentHighlight = lineIndex;
+			}
+		}
+	}
+
+	escapeHtml(text) {
+		const map = {
+			"&": "&amp;",
+			"<": "&lt;",
+			">": "&gt;",
+			'"': "&quot;",
+			"'": "&#039;",
+		};
+		return text.replace(/[&<>"']/g, (char) => map[char]);
+	}
+
+	reset() {
+		this.currentHighlight = -1;
+		this.highlightLine(-1);
+	}
+}
+
+// 애니메이션 제어: 재생/정지/속도 조절
+class AnimationController {
+	constructor(steps, onStepChange) {
+		this.steps = steps;
+		this.onStepChange = onStepChange;
+		this.currentStep = 0;
+		this.isPlaying = false;
+		this.speed = 1500; // ms per step
+		this.timer = null;
+	}
+
+	setSteps(steps) {
+		this.steps = steps;
+		this.currentStep = 0;
+	}
+
+	play() {
+		if (this.isPlaying) return;
+		this.isPlaying = true;
+
+		this.timer = setInterval(() => {
+			if (this.currentStep < this.steps.length - 1) {
+				this.currentStep++;
+				this.onStepChange(this.steps[this.currentStep]);
+			} else {
+				this.pause();
+			}
+		}, this.speed);
+	}
+
+	pause() {
+		this.isPlaying = false;
+		if (this.timer) {
+			clearInterval(this.timer);
+			this.timer = null;
+		}
+	}
+
+	next() {
+		this.pause();
+		if (this.currentStep < this.steps.length - 1) {
+			this.currentStep++;
+			this.onStepChange(this.steps[this.currentStep]);
+		}
+	}
+
+	prev() {
+		this.pause();
+		if (this.currentStep > 0) {
+			this.currentStep--;
+			this.onStepChange(this.steps[this.currentStep]);
+		}
+	}
+
+	step(index) {
+		this.pause();
+		if (index >= 0 && index < this.steps.length) {
+			this.currentStep = index;
+			this.onStepChange(this.steps[this.currentStep]);
+		}
+	}
+
+	setSpeed(ms) {
+		this.speed = ms;
+		if (this.isPlaying) {
+			this.pause();
+			this.play();
+		}
+	}
+
+	reset() {
+		this.pause();
+		this.currentStep = 0;
+		this.onStepChange(this.steps[0]);
+	}
+}
+
+// 퀴즈 관리
+class QuizManager {
+	constructor(containerId) {
+		this.container = document.getElementById(containerId);
+		this.currentQuestion = 0;
+		this.score = 0;
+		this.hintLevel = 0;
+		this.questions = [
+			{
+				question:
+					"배열 [2, 5, 8, 12, 16, 23, 38]에서 23을 찾을 때, 첫 번째 mid 값의 인덱스는?",
+				options: ["2", "3", "4", "5"],
+				correctIndex: 1,
+				hints: [
+					"배열 길이는 7, low=0, high=6",
+					"mid = 0 + Math.floor((6-0)/2)",
+					"mid = 0 + 3 = 3",
+				],
+				explanation: "첫 단계에서 low=0, high=6이므로 mid=3, arr[3]=12",
+			},
+			{
+				question: "이진탐색의 가장 중요한 전제조건은?",
+				options: [
+					"배열이 작아야 함",
+					"배열이 정렬되어 있어야 함",
+					"배열의 모든 원소가 양수",
+					"배열의 길이가 2의 배수",
+				],
+				correctIndex: 1,
+				hints: [
+					"범위를 반으로 나누려면 순서가 필요합니다",
+					"정렬되지 않으면 left/right 판단 불가",
+					"정렬(Sorted) - 이것이 핵심",
+				],
+				explanation:
+					"정렬된 배열이어야만 left/right 선택이 올바른 결과를 보장합니다.",
+			},
+			{
+				question: "1024개 원소에서 이진탐색 최악의 경우 비교 횟수는?",
+				options: ["512", "256", "10", "1024"],
+				correctIndex: 2,
+				hints: ["2^10 = 1024", "log₂(1024) = ?", "2를 10번 곱하면 1024"],
+				explanation:
+					"log₂(1024) = 10. 매 단계마다 범위가 절반으로 줄어들므로 최대 10번 비교.",
+			},
+			{
+				question:
+					"배열 [3, 7, 11, 15, 18, 24, 29, 33]에서 arr[mid] < target일 때 다음 동작은?",
+				options: ["high = mid - 1", "low = mid + 1", "mid = low", "return mid"],
+				correctIndex: 1,
+				hints: [
+					"target이 더 크면 어느 쪽을 탐색?",
+					"오른쪽(더 큰 값) 탐색 필요",
+					"low를 mid 오른쪽으로 이동",
+				],
+				explanation:
+					"arr[mid]가 target보다 작으면 target은 오른쪽 범위에 있으므로 low = mid + 1로 탐색 범위 축소.",
+			},
+		];
+	}
+
+	init() {
+		this.currentQuestion = 0;
+		this.score = 0;
+		this.hintLevel = 0;
+		this.render(0);
+	}
+
+	render(questionIndex) {
+		if (questionIndex >= this.questions.length) {
+			this.showResults();
+			return;
+		}
+
+		this.currentQuestion = questionIndex;
+		this.hintLevel = 0;
+		const q = this.questions[questionIndex];
+
+		this.container.innerHTML = "";
+
+		// 질문
+		const qDiv = document.createElement("div");
+		qDiv.className = "quiz-question";
+
+		// Safe DOM creation instead of innerHTML
+		const qPara = document.createElement("p");
+		qPara.textContent = q.question;
+		qDiv.appendChild(qPara);
+
+		this.container.appendChild(qDiv);
+
+		// 선택지
+		const optionsDiv = document.createElement("div");
+		optionsDiv.className = "quiz-options";
+
+		q.options.forEach((opt, idx) => {
+			const btn = document.createElement("button");
+			btn.className = "quiz-option-btn";
+			btn.textContent = opt;
+			btn.onclick = () => this.checkAnswer(idx);
+			optionsDiv.appendChild(btn);
+		});
+
+		this.container.appendChild(optionsDiv);
+
+		// 힌트 버튼
+		const hintBtn = document.createElement("button");
+		hintBtn.className = "quiz-hint-btn";
+		hintBtn.textContent = "💡 힌트 보기";
+		hintBtn.onclick = () => this.showHint();
+		this.container.appendChild(hintBtn);
+
+		// 진행 상황
+		const progress = document.createElement("div");
+		progress.className = "quiz-progress";
+		progress.textContent = `질문 ${questionIndex + 1} / ${this.questions.length}`;
+		this.container.appendChild(progress);
+	}
+
+	checkAnswer(selectedIndex) {
+		const q = this.questions[this.currentQuestion];
+		const isCorrect = selectedIndex === q.correctIndex;
+
+		// 피드백
+		const feedback = document.createElement("div");
+		feedback.className = `quiz-feedback ${isCorrect ? "correct" : "incorrect"}`;
+
+		// Safe DOM creation instead of innerHTML
+		const resultPara = document.createElement("p");
+		resultPara.textContent = isCorrect ? "✓ 정답입니다!" : "✗ 틀렸습니다.";
+		feedback.appendChild(resultPara);
+
+		const explanationPara = document.createElement("p");
+		explanationPara.textContent = q.explanation;
+		feedback.appendChild(explanationPara);
+
+		const container = this.container;
+		const existingFeedback = container.querySelector(".quiz-feedback");
+		if (existingFeedback) existingFeedback.remove();
+		container.appendChild(feedback);
+
+		if (isCorrect) this.score++;
+
+		// 다음 버튼
+		setTimeout(() => {
+			const nextBtn = document.createElement("button");
+			nextBtn.className = "quiz-next-btn";
+			nextBtn.textContent =
+				this.currentQuestion < this.questions.length - 1
+					? "다음 문제"
+					: "결과 보기";
+			nextBtn.onclick = () => this.render(this.currentQuestion + 1);
+			container.appendChild(nextBtn);
+		}, 100);
+	}
+
+	showHint() {
+		const q = this.questions[this.currentQuestion];
+		if (this.hintLevel < q.hints.length) {
+			const hintDiv = document.createElement("div");
+			hintDiv.className = "quiz-hint";
+			hintDiv.textContent = q.hints[this.hintLevel];
+			this.container.appendChild(hintDiv);
+			this.hintLevel++;
+		}
+	}
+
+	showResults() {
+		this.container.innerHTML = "";
+
+		// Safe DOM creation instead of innerHTML
+		const resultsDiv = document.createElement("div");
+		resultsDiv.className = "quiz-results";
+
+		const heading = document.createElement("h3");
+		heading.textContent = "최종 점수";
+		resultsDiv.appendChild(heading);
+
+		const scorePara = document.createElement("p");
+		scorePara.className = "quiz-score";
+		scorePara.textContent = `${this.score} / ${this.questions.length}`;
+		resultsDiv.appendChild(scorePara);
+
+		const messagePara = document.createElement("p");
+		messagePara.className = "quiz-message";
+		messagePara.textContent =
+			this.score === this.questions.length
+				? "완벽합니다! 🎉"
+				: "좋은 시도입니다! 다시 한번 학습해보세요.";
+		resultsDiv.appendChild(messagePara);
+
+		this.container.appendChild(resultsDiv);
+	}
+}
+
+// 메인 앱 클래스
+class App {
+	static instance = null;
+
+	constructor() {
+		if (App.instance) return App.instance;
+
+		this.engine = null;
+		this.visualizer = null;
+		this.codePanel = null;
+		this.controller = null;
+		this.quiz = null;
+
+		// 최소 3단계 보장될 때까지 배열/타겟 재생성
+		do {
+			this.currentArray = this._generateRandomArray();
+			this.currentTarget = this._pickRandomTarget(this.currentArray);
+		} while (new BinarySearchEngine().run(this.currentArray, this.currentTarget).steps.length < 3);
+		this.currentMode = "iterative";
+		this.currentSection = "concept";
+		this.theme = localStorage.getItem("binarySearchTheme") || "dark";
+
+		App.instance = this;
+	}
+
+	init() {
+		// 테마 적용
+		document.documentElement.setAttribute("data-theme", this.theme);
+		this.updateThemeIcon();
+
+		// 컴포넌트 초기화 (HTML의 실제 ID: array-bars, code-content)
+		this.visualizer = new Visualizer("array-bars");
+		this.codePanel = new CodePanel("code-content");
+		this.quiz = new QuizManager("quiz-container");
+
+		// 이벤트 바인딩
+		this.bindSectionButtons();
+		this.bindControlButtons();
+		this.bindKeyboard();
+
+		// 테마 토글
+		const themeToggle = document.getElementById("theme-toggle");
+		if (themeToggle) {
+			themeToggle.addEventListener("click", () => this.toggleTheme());
+		}
+
+		// 시작하기 버튼 → 시각화 섹션으로 이동
+		const startBtn = document.getElementById("start-btn");
+		if (startBtn) {
+			startBtn.addEventListener("click", () =>
+				this.switchToSection("visualizer"),
+			);
+		}
+
+		// footer 버튼 바인딩
+		const prevFooter = document.getElementById("prev-btn-footer");
+		const playFooter = document.getElementById("play-btn-footer");
+		const nextFooter = document.getElementById("next-btn-footer");
+		const resetFooter = document.getElementById("reset-btn-footer");
+		const speedFooter = document.getElementById("speed-slider-footer");
+		const quizFooter = document.getElementById("quiz-btn-footer");
+
+		if (prevFooter)
+			prevFooter.addEventListener("click", () => this.onPrevClick());
+		if (playFooter)
+			playFooter.addEventListener("click", () => {
+				this.onPlayPauseClick();
+				const btn = document.getElementById("play-btn-footer");
+				if (btn && this.controller)
+					btn.textContent = this.controller.isPlaying ? "⏸" : "▶";
+			});
+		if (nextFooter)
+			nextFooter.addEventListener("click", () => this.onNextClick());
+		if (resetFooter)
+			resetFooter.addEventListener("click", () => this.onResetClick());
+		if (speedFooter)
+			speedFooter.addEventListener("input", (e) =>
+				this.onSpeedChange(e.target.value),
+			);
+		if (quizFooter)
+			quizFooter.addEventListener("click", () => this.switchToSection("quiz"));
+
+		// 바로 시각화 섹션으로 시작 (설명 페이지 스킵)
+		this.switchToSection("visualizer");
+	}
+
+	bindSectionButtons() {
+		const sectionBtns = document.querySelectorAll("[data-section]");
+		sectionBtns.forEach((btn) => {
+			btn.addEventListener("click", () => {
+				const sectionId = btn.getAttribute("data-section");
+				this.switchToSection(sectionId);
+			});
+		});
+	}
+
+	bindControlButtons() {
+		// HTML ID: play-btn (not play-pause-btn)
+		const playPauseBtn =
+			document.getElementById("play-btn") ||
+			document.getElementById("play-pause-btn");
+		const nextBtn = document.getElementById("next-btn");
+		const prevBtn = document.getElementById("prev-btn");
+		const resetBtn = document.getElementById("reset-btn");
+		const speedSlider = document.getElementById("speed-slider");
+
+		if (playPauseBtn)
+			playPauseBtn.addEventListener("click", () => this.onPlayPauseClick());
+		if (nextBtn) nextBtn.addEventListener("click", () => this.onNextClick());
+		if (prevBtn) prevBtn.addEventListener("click", () => this.onPrevClick());
+		if (resetBtn) resetBtn.addEventListener("click", () => this.onResetClick());
+		if (speedSlider)
+			speedSlider.addEventListener("input", (e) =>
+				this.onSpeedChange(e.target.value),
+			);
+	}
+
+	bindKeyboard() {
+		document.addEventListener("keydown", (e) => {
+			if (!this.controller) return;
+			// 수식키(Ctrl, Alt, Meta)가 눌려있으면 브라우저 기본 동작 허용
+			if (e.ctrlKey || e.altKey || e.metaKey) return;
+
+			switch (e.code) {
+				case "Space":
+					e.preventDefault();
+					this.onPlayPauseClick();
+					break;
+				case "ArrowRight":
+					e.preventDefault();
+					this.onNextClick();
+					break;
+				case "ArrowLeft":
+					e.preventDefault();
+					this.onPrevClick();
+					break;
+				case "KeyR":
+					e.preventDefault();
+					this.onResetClick();
+					break;
+				case "KeyT":
+					e.preventDefault();
+					this.toggleTheme();
+					break;
+			}
+		});
+	}
+
+	switchToSection(sectionId) {
+		// 모든 섹션 숨김
+		document.querySelectorAll(".section").forEach((sec) => {
+			sec.classList.remove("active");
+		});
+
+		// 선택 섹션 표시 (ID 별칭 처리: concept → intro, visualizer → visualization)
+		const idMap = { concept: "intro", visualizer: "visualization" };
+		const resolvedId = idMap[sectionId] || sectionId;
+		const section = document.getElementById(resolvedId);
+		if (section) {
+			section.classList.add("active");
+			// currentSection은 정규화된 키(concept/visualizer/…)로 유지
+			this.currentSection = sectionId;
+			this.updateProgressBar();
+
+			// 섹션별 초기화
+			if (sectionId === "visualizer") {
+				this.startVisualization(this.currentArray, this.currentTarget);
+			} else if (sectionId === "code") {
+				this.codePanel.init();
+			} else if (sectionId === "quiz") {
+				this.quiz.init();
+			}
+		}
+	}
+
+	startVisualization(array, target) {
+		this.engine = new BinarySearchEngine();
+		const result = this.engine.run(array, target);
+
+		// 찾는 값 표시
+		const targetLabel = document.getElementById("search-target");
+		if (targetLabel) {
+			targetLabel.textContent = "";
+			targetLabel.appendChild(document.createTextNode("찾는 값: "));
+			const strong = document.createElement("strong");
+			strong.textContent = target;
+			targetLabel.appendChild(strong);
+		}
+
+		this.visualizer.init(array);
+		this.codePanel.init();
+		this.controller = new AnimationController(result.steps, (step) =>
+			this.onStepChange(step),
+		);
+		this.controller.reset();
+		// 첫 단계 즉시 표시
+		if (result.steps.length > 0) {
+			this.onStepChange(result.steps[0]);
+		}
+	}
+
+	onStepChange(step) {
+		this.visualizer.update(step);
+		this.codePanel.highlightLine(step.sourceCodeLine);
+
+		// 설명 업데이트 (HTML ID: info-panel 또는 step-desc)
+		const descDiv =
+			document.getElementById("step-desc") ||
+			document.getElementById("info-panel");
+		if (descDiv) {
+			descDiv.textContent = step.description;
+		}
+
+		// 단계 표시 (footer의 step-counter-footer 포함)
+		const totalSteps = this.controller.steps.length;
+		const stepText = `단계 ${step.stepIndex + 1} / ${totalSteps}`;
+		const stepCountDiv = document.getElementById("step-count");
+		if (stepCountDiv) {
+			stepCountDiv.textContent = stepText;
+		}
+		const stepCounterFooter = document.getElementById("step-counter-footer");
+		if (stepCounterFooter) {
+			stepCounterFooter.textContent = stepText;
+			stepCounterFooter.style.visibility = "visible";
+		}
+		const stepCounter = document.getElementById("step-counter");
+		if (stepCounter) {
+			stepCounter.textContent = stepText;
+			stepCounter.style.visibility = "visible";
+		}
+	}
+
+	onPlayPauseClick() {
+		if (!this.controller) return;
+
+		if (this.controller.isPlaying) {
+			this.controller.pause();
+		} else {
+			this.controller.play();
+		}
+
+		// 버튼 아이콘 업데이트 (HTML ID: play-btn)
+		const btn =
+			document.getElementById("play-btn") ||
+			document.getElementById("play-pause-btn");
+		if (btn) {
+			btn.textContent = this.controller.isPlaying ? "⏸" : "▶";
+		}
+		const btnFooter = document.getElementById("play-btn-footer");
+		if (btnFooter) {
+			btnFooter.textContent = this.controller.isPlaying ? "⏸" : "▶";
+		}
+	}
+
+	onNextClick() {
+		if (this.controller) {
+			this.controller.next();
+		}
+	}
+
+	onPrevClick() {
+		if (this.controller) {
+			this.controller.prev();
+		}
+	}
+
+	onResetClick() {
+		if (this.controller) {
+			this.controller.reset();
+		}
+	}
+
+	onSpeedChange(value) {
+		if (this.controller) {
+			const ms = Math.round(3000 / parseFloat(value)); // 배속 → ms 변환
+			this.controller.setSpeed(ms);
+		}
+	}
+
+	toggleTheme() {
+		this.theme = this.theme === "dark" ? "light" : "dark";
+		document.documentElement.setAttribute("data-theme", this.theme);
+		localStorage.setItem("binarySearchTheme", this.theme);
+		this.updateThemeIcon();
+	}
+
+	updateThemeIcon() {
+		const themeToggle = document.getElementById("theme-toggle");
+		if (themeToggle) {
+			// 다크모드일 때 🌓(반달), 라이트모드일 때 ☀️(태양)
+			themeToggle.textContent = this.theme === "dark" ? "🌓" : "☀️";
+		}
+	}
+
+	_generateRandomArray() {
+		const size = 10;
+		const set = new Set();
+		while (set.size < size) {
+			set.add(Math.floor(Math.random() * 57) + 3); // 3~59
+		}
+		return [...set].sort((a, b) => a - b);
+	}
+
+	_pickRandomTarget(array) {
+		// 첫 mid(인덱스 4~5)를 피하되, 다양한 위치에서 선택 → 최소 3단계 보장
+		// 좋은 후보: 인덱스 0,1,2, 7,8,9 (양쪽 끝 3개씩)
+		const good = [0, 1, 2, 7, 8, 9].filter((i) => i < array.length);
+		const idx = good[Math.floor(Math.random() * good.length)];
+		return array[idx];
+	}
+
+	updateProgressBar() {
+		const sectionIds = ["visualizer", "code", "quiz", "complexity"];
+		const currentIndex = sectionIds.indexOf(this.currentSection);
+		// currentIndex가 -1이면 0으로 처리
+		const safeIndex = currentIndex >= 0 ? currentIndex : 0;
+		const progress = ((safeIndex + 1) / sectionIds.length) * 100;
+
+		const progressBar = document.querySelector(".progress-bar");
+		if (progressBar) {
+			progressBar.style.width = `${progress}%`;
+		}
+		const progressContainer = document.querySelector(".progress-bar-container");
+		if (progressContainer) {
+			progressContainer.setAttribute("aria-valuenow", Math.round(progress));
+		}
+
+		// step-display (header) 또는 .step-text 클래스 모두 업데이트
+		const stepDisplay = document.getElementById("step-display");
+		if (stepDisplay) {
+			stepDisplay.textContent = `Step ${safeIndex + 1} / ${sectionIds.length}`;
+		}
+		const stepText = document.querySelector(".step-text");
+		if (stepText && stepText !== stepDisplay) {
+			stepText.textContent = `Step ${safeIndex + 1} / ${sectionIds.length}`;
+		}
+	}
+}
+
+// 초기화
+document.addEventListener("DOMContentLoaded", () => {
+	const app = new App();
+	app.init();
+	window.app = app; // 디버깅용 전역 접근
+});
+
+</script>
+</body>
+</html>

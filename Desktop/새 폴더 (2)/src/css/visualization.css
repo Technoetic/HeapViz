@@ -1,0 +1,225 @@
+/* --------------------------------------------------------------------------
+   6. Section 2 & 3: Visualization Container
+   -------------------------------------------------------------------------- */
+
+/* Desktop: 60/40 grid split, fill all available height */
+.visualization-container {
+	display: grid;
+	grid-template-columns: 3fr 2fr;
+	grid-template-rows: 1fr;
+	gap: 16px;
+	flex: 1;
+	min-height: 0;
+	align-items: stretch;
+}
+
+.visualization-container > * {
+	height: 100%;
+}
+
+/* --- Search target label --- */
+.search-target {
+	font-size: 14px;
+	font-family: var(--font-mono);
+	color: var(--text-secondary);
+	margin-bottom: 4px;
+}
+
+.search-target strong {
+	color: var(--color-accent);
+	font-size: 16px;
+}
+
+/* --- Array container --- */
+.array-container {
+	background-color: var(--bg-surface);
+	border: 1px solid var(--color-grid);
+	border-radius: 12px;
+	padding: 16px;
+	display: flex;
+	flex-direction: column;
+	box-shadow: var(--shadow-sm);
+	transition: border-color 0.3s var(--easing-smooth);
+	position: relative;
+	overflow: visible;
+	min-height: 0;
+}
+
+[data-theme="dark"] .array-container {
+	/* Subtle internal grid background — bruno-simon feel */
+	background-image:
+		linear-gradient(rgba(123, 63, 160, 0.07) 1px, transparent 1px),
+		linear-gradient(90deg, rgba(123, 63, 160, 0.07) 1px, transparent 1px);
+	background-size: 24px 24px;
+}
+
+/* Pointer display row */
+.pointer-container {
+	display: flex;
+	justify-content: space-around;
+	align-items: flex-end;
+	height: 48px;
+	margin-bottom: 12px;
+	position: relative;
+	overflow: visible;
+}
+
+.pointer {
+	font-size: 12px;
+	font-weight: 700;
+	opacity: 0;
+	transition: all 0.3s var(--easing-smooth);
+	position: absolute;
+	pointer-events: none;
+	width: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.pointer.active {
+	opacity: 1;
+}
+
+.pointer-arrow {
+	font-size: 18px;
+	line-height: 1;
+	margin-bottom: 2px;
+}
+
+.pointer-label {
+	white-space: nowrap;
+}
+
+.pointer--low .pointer-arrow {
+	color: var(--ptr-low);
+}
+.pointer--mid .pointer-arrow {
+	color: var(--ptr-mid);
+}
+.pointer--high .pointer-arrow {
+	color: var(--ptr-high);
+}
+
+.pointer--low .pointer-label {
+	color: var(--ptr-low);
+}
+.pointer--mid .pointer-label {
+	color: var(--ptr-mid);
+}
+.pointer--high .pointer-label {
+	color: var(--ptr-high);
+}
+
+.pointer-label {
+	font-size: 11px;
+	font-family: var(--font-mono);
+	letter-spacing: 0.5px;
+}
+
+/* Bars row */
+.bars-row {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-around;
+	flex: 1;
+	gap: 3px;
+	padding-bottom: 28px; /* space for value labels */
+	position: relative;
+}
+
+/* Individual bar */
+.bar {
+	flex: 1;
+	min-width: 28px;
+	max-width: 80px;
+	background-color: var(--bar-inactive);
+	border-radius: 4px 4px 0 0;
+	transition: all 0.3s var(--easing-smooth);
+	cursor: default;
+	position: relative;
+}
+
+/* Bar states */
+.bar.bar--in-range {
+	background-color: var(--bar-in-range);
+}
+
+.bar.bar--mid {
+	background-color: var(--bar-active);
+	box-shadow:
+		var(--bar-mid-glow),
+		0 0 8px var(--bar-active),
+		0 0 20px rgba(136, 204, 255, 0.4),
+		0 0 40px rgba(68, 136, 238, 0.2);
+}
+
+/* Pulse animation on active mid bar */
+.bar.bar--mid::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	background-color: var(--bar-active);
+	opacity: 0.4;
+	animation: pulse 1.2s var(--easing-smooth) infinite;
+}
+
+.bar.bar--found {
+	background-color: var(--bar-found);
+	box-shadow:
+		var(--bar-found-glow),
+		0 0 8px var(--bar-found),
+		0 0 20px rgba(79, 200, 120, 0.4);
+}
+
+.bar.bar--eliminated {
+	background-color: var(--bar-eliminated);
+	opacity: 0.5;
+}
+
+/* Value label below bar */
+.bar-value {
+	position: absolute;
+	bottom: -22px;
+	left: 50%;
+	transform: translateX(-50%);
+	font-size: 11px;
+	color: var(--text-secondary);
+	white-space: nowrap;
+	font-family: var(--font-mono);
+}
+
+/* Step description / info below array */
+.info-panel {
+	margin-top: 8px;
+	padding-top: 8px;
+	border-top: 1px solid var(--color-border);
+	font-size: 13px;
+	color: var(--text-secondary);
+	line-height: 1.4;
+}
+
+.info-panel strong {
+	color: var(--text-primary);
+}
+
+/* Pointer state display */
+.pointer-state {
+	display: flex;
+	gap: 16px;
+	flex-wrap: wrap;
+	margin-top: 8px;
+	font-size: 13px;
+	font-family: var(--font-mono);
+}
+
+.ptr-val--low {
+	color: var(--ptr-low);
+}
+.ptr-val--mid {
+	color: var(--ptr-mid);
+}
+.ptr-val--high {
+	color: var(--ptr-high);
+}

@@ -1,0 +1,213 @@
+/* --------------------------------------------------------------------------
+   13. Animations & Keyframes
+   -------------------------------------------------------------------------- */
+
+/* Fade in — section transitions (cassie.codes smooth scroll feel) */
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+/* Slide up — cards, quiz questions */
+@keyframes slideUp {
+	from {
+		opacity: 0;
+		transform: translateY(20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+/* Slide in from left — pointers */
+@keyframes slideInLeft {
+	from {
+		opacity: 0;
+		transform: translateX(-12px);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+
+/* Pulse — mid bar neon glow (bruno-simon inspired) */
+@keyframes pulse {
+	0%,
+	100% {
+		opacity: 0.4;
+		transform: scaleX(1);
+	}
+	50% {
+		opacity: 0;
+		transform: scaleX(1.04);
+	}
+}
+
+/* Blinking cursor — strml.net typing effect */
+@keyframes blink-cursor {
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0;
+	}
+}
+
+/* Neon glow flicker — for found state celebration */
+@keyframes glowFlicker {
+	0%,
+	100% {
+		box-shadow: var(--bar-found-glow);
+	}
+	30% {
+		box-shadow:
+			0 0 24px var(--color-success),
+			0 0 48px rgba(79, 200, 120, 0.5);
+	}
+	60% {
+		box-shadow: var(--bar-found-glow);
+	}
+}
+
+.bar.found {
+	animation: glowFlicker 1.5s var(--easing-smooth) 2;
+}
+
+/* Shake animation — wrong quiz answer */
+@keyframes shake {
+	0%,
+	100% {
+		transform: translateX(0);
+	}
+	20% {
+		transform: translateX(-6px);
+	}
+	40% {
+		transform: translateX(6px);
+	}
+	60% {
+		transform: translateX(-4px);
+	}
+	80% {
+		transform: translateX(4px);
+	}
+}
+
+.quiz-option--wrong {
+	animation: shake 0.4s var(--easing-sharp);
+}
+
+/* Scale pop — correct answer */
+@keyframes scalePop {
+	0% {
+		transform: scale(1);
+	}
+	40% {
+		transform: scale(1.04);
+	}
+	100% {
+		transform: scale(1);
+	}
+}
+
+.quiz-option--correct {
+	animation: scalePop 0.35s var(--easing-bounce);
+}
+
+/* Stagger animation helper classes */
+.anim-delay-1 {
+	animation-delay: 0.05s;
+}
+.anim-delay-2 {
+	animation-delay: 0.1s;
+}
+.anim-delay-3 {
+	animation-delay: 0.15s;
+}
+
+/* --------------------------------------------------------------------------
+   14. Dark mode grid background (explicit override)
+      Bruno Simon: isometric grid of subtle lines + purple X dot markers
+   -------------------------------------------------------------------------- */
+
+[data-theme="dark"] body {
+	background-color: var(--bg-base);
+	/* Horizontal grid lines */
+	background-image:
+		linear-gradient(rgba(123, 63, 160, 0.18) 1px, transparent 1px),
+		/* Vertical grid lines */
+		linear-gradient(90deg, rgba(123, 63, 160, 0.18) 1px, transparent 1px);
+	background-size: 40px 40px;
+	background-position: center center;
+}
+
+/* Light mode: no texture, clean white */
+[data-theme="light"] body {
+	background-image: none;
+	background-color: var(--bg-base);
+}
+
+/* --------------------------------------------------------------------------
+   15. Focus / accessibility
+   -------------------------------------------------------------------------- */
+
+:focus-visible {
+	outline: 2px solid var(--color-accent);
+	outline-offset: 2px;
+	border-radius: 4px;
+}
+
+button:focus-visible,
+.quiz-option:focus-visible,
+.code-tab:focus-visible,
+.nav-tab:focus-visible {
+	outline: 2px solid var(--color-accent);
+	outline-offset: 2px;
+}
+
+/* High-contrast mode support */
+@media (forced-colors: active) {
+	.bar {
+		border: 1px solid ButtonText;
+	}
+
+	.bar.mid {
+		border-color: Highlight;
+	}
+}
+
+/* --------------------------------------------------------------------------
+   16. Print styles
+   -------------------------------------------------------------------------- */
+
+@media print {
+	header,
+	footer,
+	.controls,
+	#theme-toggle,
+	#speed-slider {
+		display: none;
+	}
+
+	main {
+		position: static;
+		overflow: visible;
+	}
+
+	body {
+		background-image: none;
+		color: #000;
+	}
+
+	.section {
+		display: block;
+		page-break-after: always;
+	}
+}

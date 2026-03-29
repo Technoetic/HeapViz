@@ -1,0 +1,92 @@
+/* --------------------------------------------------------------------------
+   2. Reset & Global
+   -------------------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+
+html {
+	scroll-behavior: smooth;
+	-webkit-text-size-adjust: 100%;
+}
+
+body {
+	font-family: var(--font-sans);
+	font-size: 16px;
+	line-height: 1.6;
+	color: var(--text-primary);
+	background-color: var(--bg-base);
+	height: 100vh;
+	overflow: hidden;
+	transition:
+		background-color 0.3s var(--easing-smooth),
+		color 0.3s var(--easing-smooth);
+
+	/* Bruno-simon: line grid + dot markers on dark background */
+	background-image:
+		linear-gradient(rgba(123, 63, 160, 0.12) 1px, transparent 1px),
+		linear-gradient(90deg, rgba(123, 63, 160, 0.12) 1px, transparent 1px),
+		radial-gradient(circle, rgba(123, 63, 160, 0.35) 1px, transparent 1px);
+	background-size:
+		40px 40px,
+		40px 40px,
+		40px 40px;
+}
+
+[data-theme="light"] body {
+	background-image: none;
+}
+
+/* Reinforce grid for explicit dark mode */
+[data-theme="dark"] body {
+	background-image:
+		linear-gradient(rgba(123, 63, 160, 0.12) 1px, transparent 1px),
+		linear-gradient(90deg, rgba(123, 63, 160, 0.12) 1px, transparent 1px),
+		radial-gradient(circle, rgba(123, 63, 160, 0.35) 1px, transparent 1px);
+	background-size:
+		40px 40px,
+		40px 40px,
+		40px 40px;
+}
+
+a {
+	color: var(--color-accent);
+	text-decoration: none;
+	transition: opacity 0.2s var(--easing-smooth);
+}
+
+a:hover {
+	opacity: 0.8;
+}
+
+button {
+	font-family: var(--font-sans);
+	cursor: pointer;
+}
+
+/* Hide all scrollbars */
+* {
+	scrollbar-width: none; /* Firefox */
+}
+::-webkit-scrollbar {
+	display: none; /* Chrome, Safari, Edge */
+}
+
+::-webkit-scrollbar-track {
+	background: transparent;
+	border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+	background: transparent;
+	border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	opacity: 0.8;
+}

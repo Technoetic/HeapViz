@@ -1,0 +1,203 @@
+/* --------------------------------------------------------------------------
+   8. Controls (.controls inline + footer control bar)
+   -------------------------------------------------------------------------- */
+
+/* Inline controls within sections */
+.controls {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	flex-wrap: wrap;
+	margin-top: 20px;
+	padding-top: 20px;
+	border-top: 1px solid var(--color-border);
+}
+
+/* Footer control bar — sticky bottom 64px */
+footer {
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	height: var(--footer-height);
+	z-index: var(--z-footer);
+
+	background-color: var(--bg-surface);
+	border-top: 1px solid var(--color-grid);
+	backdrop-filter: blur(8px);
+	-webkit-backdrop-filter: blur(8px);
+
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 8px 24px;
+
+	transition: background-color 0.3s var(--easing-smooth);
+}
+
+[data-theme="dark"] footer {
+	box-shadow:
+		0 -1px 0 var(--color-grid),
+		0 -4px 24px rgba(123, 63, 160, 0.12);
+}
+
+/* Shared button style for footer + controls */
+footer button,
+.controls button {
+	background-color: transparent;
+	border: 1px solid var(--color-border);
+	color: var(--text-primary);
+	padding: 8px 12px;
+	border-radius: 8px;
+	font-size: 16px;
+	font-family: var(--font-sans);
+	min-width: 44px;
+	min-height: 44px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.2s var(--easing-smooth);
+}
+
+footer button:hover,
+.controls button:hover {
+	border-color: var(--color-accent);
+	background-color: var(--color-grid-subtle);
+	transform: translateY(-1px);
+}
+
+footer button:active,
+.controls button:active {
+	transform: translateY(0);
+	box-shadow: none;
+}
+
+footer button.active,
+.controls button.active {
+	background-color: var(--color-grid-subtle);
+	border-color: var(--color-accent);
+	color: var(--color-accent);
+}
+
+[data-theme="dark"] footer button:hover,
+[data-theme="dark"] .controls button:hover {
+	box-shadow: 0 0 12px rgba(136, 204, 255, 0.15);
+}
+
+/* Play/Pause button — primary action, neon accent */
+#play-btn,
+.btn-play {
+	border-color: var(--color-accent);
+	color: var(--color-accent);
+}
+
+[data-theme="dark"] #play-btn,
+[data-theme="dark"] .btn-play {
+	box-shadow: 0 0 8px rgba(136, 204, 255, 0.2);
+}
+
+/* Speed control */
+.speed-control {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.speed-control label {
+	font-size: 12px;
+	color: var(--text-secondary);
+	white-space: nowrap;
+	user-select: none;
+}
+
+/* Custom range slider */
+#speed-slider,
+#speed-slider-footer,
+.speed-slider {
+	-webkit-appearance: none;
+	appearance: none;
+	width: 150px;
+	height: 6px;
+	border-radius: 3px;
+	background: linear-gradient(
+		to right,
+		#7b3fa0 0%,
+		#7b3fa0 50%,
+		rgba(123, 63, 160, 0.3) 50%,
+		rgba(123, 63, 160, 0.3) 100%
+	);
+	outline: none;
+	cursor: pointer;
+	transition: background 0.2s var(--easing-smooth);
+	border: none;
+}
+
+#speed-slider::-webkit-slider-runnable-track,
+#speed-slider-footer::-webkit-slider-runnable-track,
+.speed-slider::-webkit-slider-runnable-track {
+	height: 6px;
+	border-radius: 3px;
+	background: linear-gradient(to right, #7b3fa0, rgba(123, 63, 160, 0.4));
+	cursor: pointer;
+}
+
+#speed-slider::-webkit-slider-thumb,
+#speed-slider-footer::-webkit-slider-thumb,
+.speed-slider::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	appearance: none;
+	width: 16px;
+	height: 16px;
+	border-radius: 50%;
+	background-color: #7b3fa0;
+	border: 2px solid var(--bg-surface);
+	cursor: pointer;
+	margin-top: -5px;
+	transition: transform 0.15s var(--easing-bounce);
+	box-shadow: 0 0 8px rgba(123, 63, 160, 0.6);
+}
+
+#speed-slider::-webkit-slider-thumb:hover,
+#speed-slider-footer::-webkit-slider-thumb:hover,
+.speed-slider::-webkit-slider-thumb:hover {
+	transform: scale(1.25);
+	background-color: #9b5fc0;
+}
+
+[data-theme="dark"] #speed-slider::-webkit-slider-thumb,
+[data-theme="dark"] #speed-slider-footer::-webkit-slider-thumb,
+[data-theme="dark"] .speed-slider::-webkit-slider-thumb {
+	box-shadow: 0 0 10px #7b3fa0;
+}
+
+#speed-slider::-moz-range-track,
+#speed-slider-footer::-moz-range-track,
+.speed-slider::-moz-range-track {
+	height: 6px;
+	border-radius: 3px;
+	background: linear-gradient(to right, #7b3fa0, rgba(123, 63, 160, 0.4));
+	cursor: pointer;
+	border: none;
+}
+
+#speed-slider::-moz-range-thumb,
+#speed-slider-footer::-moz-range-thumb,
+.speed-slider::-moz-range-thumb {
+	width: 16px;
+	height: 16px;
+	border-radius: 50%;
+	background-color: #7b3fa0;
+	border: 2px solid var(--bg-surface);
+	cursor: pointer;
+	box-shadow: 0 0 8px rgba(123, 63, 160, 0.6);
+}
+
+.step-counter {
+	font-size: 13px;
+	color: var(--text-secondary);
+	min-width: 64px;
+	text-align: center;
+	font-family: var(--font-mono);
+}

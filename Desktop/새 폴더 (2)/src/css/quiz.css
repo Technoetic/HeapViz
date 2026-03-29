@@ -1,0 +1,197 @@
+/* --------------------------------------------------------------------------
+   9. Quiz Section
+   -------------------------------------------------------------------------- */
+
+#quiz-container {
+	max-width: 600px;
+	margin: 0 auto;
+}
+
+.question-card {
+	background-color: var(--bg-surface);
+	border: 1px solid var(--color-grid);
+	border-radius: 12px;
+	padding: 24px;
+	margin-bottom: 24px;
+	box-shadow: var(--shadow-sm);
+	transition: border-color 0.3s var(--easing-smooth);
+	animation: slideUp 0.35s var(--easing-smooth);
+}
+
+.quiz-progress {
+	font-size: 12px;
+	color: var(--text-secondary);
+	margin-bottom: 14px;
+	font-family: var(--font-mono);
+	letter-spacing: 0.5px;
+}
+
+.quiz-progress-bar-wrap {
+	width: 100%;
+	height: 4px;
+	background-color: var(--bar-eliminated);
+	border-radius: 2px;
+	margin-top: 6px;
+	overflow: hidden;
+}
+
+.quiz-progress-bar {
+	height: 100%;
+	background-color: var(--color-accent);
+	border-radius: 2px;
+	transition: width 0.4s var(--easing-smooth);
+}
+
+.question-text {
+	font-size: 16px;
+	font-weight: 600;
+	margin: 16px 0 24px;
+	line-height: 1.5;
+	color: var(--text-primary);
+}
+
+/* Quiz options */
+.quiz-options {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	margin-bottom: 20px;
+}
+
+.quiz-option {
+	display: flex;
+	align-items: center;
+	padding: 12px 16px;
+	border: 1px solid var(--color-border);
+	border-radius: 8px;
+	cursor: pointer;
+	transition: all 0.2s var(--easing-smooth);
+	user-select: none;
+}
+
+.quiz-option:hover {
+	border-color: var(--color-accent);
+	background-color: var(--color-grid-subtle);
+	transform: translateX(4px);
+}
+
+.quiz-option input[type="radio"] {
+	margin-right: 12px;
+	cursor: pointer;
+	accent-color: var(--color-accent);
+	width: 16px;
+	height: 16px;
+}
+
+.quiz-option label {
+	cursor: pointer;
+	flex: 1;
+	font-size: 14px;
+	line-height: 1.5;
+}
+
+/* Correct answer — cassie.codes green block */
+.quiz-option.quiz-btn--correct,
+.quiz-option--correct {
+	border-color: var(--quiz-correct-border);
+	background-color: var(--quiz-correct-bg);
+	box-shadow: 0 0 16px rgba(79, 200, 120, 0.25);
+}
+
+/* Wrong answer — red glow */
+.quiz-option.quiz-btn--wrong,
+.quiz-option--wrong {
+	border-color: var(--quiz-wrong-border);
+	background-color: var(--quiz-wrong-bg);
+	box-shadow: 0 0 12px rgba(248, 81, 73, 0.2);
+}
+
+/* Feedback message */
+.quiz-feedback {
+	padding: 12px 16px;
+	border-radius: 8px;
+	margin-top: 14px;
+	display: none;
+	font-size: 14px;
+	font-weight: 500;
+	line-height: 1.5;
+	animation: fadeIn 0.25s var(--easing-smooth);
+}
+
+.quiz-feedback.correct {
+	display: block;
+	background-color: var(--quiz-correct-bg);
+	border: 1px solid var(--quiz-correct-border);
+	color: var(--color-success);
+}
+
+.quiz-feedback.incorrect {
+	display: block;
+	background-color: var(--quiz-wrong-bg);
+	border: 1px solid var(--quiz-wrong-border);
+	color: var(--color-error);
+}
+
+/* Quiz buttons */
+.quiz-buttons {
+	display: flex;
+	gap: 10px;
+	margin-top: 4px;
+}
+
+.quiz-buttons button {
+	flex: 1;
+	padding: 11px 16px;
+	border: 1px solid var(--color-border);
+	background-color: transparent;
+	color: var(--text-primary);
+	border-radius: 8px;
+	font-size: 14px;
+	font-weight: 600;
+	transition: all 0.2s var(--easing-smooth);
+}
+
+.quiz-buttons button:hover {
+	border-color: var(--color-accent);
+	background-color: var(--color-grid-subtle);
+}
+
+.quiz-buttons .submit-btn {
+	background-color: var(--color-accent);
+	color: var(--bg-base);
+	border-color: var(--color-accent);
+}
+
+.quiz-buttons .submit-btn:hover {
+	opacity: 0.88;
+	transform: translateY(-1px);
+	box-shadow: var(--shadow-md);
+}
+
+/* Score / completion card */
+.quiz-result {
+	text-align: center;
+	padding: 40px 24px;
+	background-color: var(--bg-surface);
+	border: 1px solid var(--color-grid);
+	border-radius: 12px;
+	animation: slideUp 0.4s var(--easing-smooth);
+}
+
+.quiz-result .score {
+	font-size: 48px;
+	font-weight: 800;
+	color: var(--color-accent);
+	line-height: 1;
+	margin-bottom: 12px;
+}
+
+[data-theme="dark"] .quiz-result .score {
+	text-shadow: var(--bar-mid-glow);
+}
+
+.quiz-result .message {
+	font-size: 18px;
+	color: var(--text-primary);
+	margin-bottom: 24px;
+}

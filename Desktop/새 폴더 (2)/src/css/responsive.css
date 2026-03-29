@@ -1,0 +1,257 @@
+/* --------------------------------------------------------------------------
+   11. Utility / Shared Components
+   -------------------------------------------------------------------------- */
+
+/* Badge / tag */
+.badge {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 4px;
+	font-size: 11px;
+	font-weight: 700;
+	font-family: var(--font-mono);
+	letter-spacing: 0.5px;
+	background-color: var(--color-grid-subtle);
+	color: var(--color-accent);
+	border: 1px solid var(--color-grid);
+}
+
+/* Divider */
+.divider {
+	border: none;
+	border-top: 1px solid var(--color-border);
+	margin: 24px 0;
+}
+
+/* Step description text */
+.step-description,
+#step-desc {
+	font-size: 14px;
+	color: var(--text-secondary);
+	line-height: 1.7;
+	padding: 12px 0;
+}
+
+.step-description strong,
+#step-desc strong {
+	color: var(--color-accent);
+	font-family: var(--font-mono);
+}
+
+/* --------------------------------------------------------------------------
+   12. Responsive Design
+   -------------------------------------------------------------------------- */
+
+/* Tablet: 768px – 1023px */
+@media (max-width: 1023px) {
+	:root {
+		--header-height: 56px;
+		--section-pad-x: 16px;
+		--section-pad-y: 24px;
+	}
+
+	.visualization-container {
+		display: grid;
+		grid-template-columns: 1fr;
+		grid-template-rows: auto auto;
+		gap: 12px;
+	}
+
+	.array-container {
+		height: 50vh;
+	}
+
+	.code-panel-wrapper {
+		height: 35vh;
+		max-height: 35vh;
+	}
+
+	main {
+		top: var(--header-height);
+		bottom: var(--footer-height);
+	}
+
+	.complexity-comparison {
+		grid-template-columns: 1fr;
+	}
+
+	/* Tablet: ensure purple slider on all breakpoints */
+	#speed-slider,
+	#speed-slider-footer,
+	.speed-slider {
+		-webkit-appearance: none;
+		appearance: none;
+		background: linear-gradient(to right, #7b3fa0, rgba(123, 63, 160, 0.35));
+	}
+
+	#speed-slider::-webkit-slider-thumb,
+	#speed-slider-footer::-webkit-slider-thumb,
+	.speed-slider::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		appearance: none;
+		background-color: #7b3fa0;
+	}
+
+	#speed-slider::-moz-range-thumb,
+	#speed-slider-footer::-moz-range-thumb,
+	.speed-slider::-moz-range-thumb {
+		background-color: #7b3fa0;
+		border: none;
+	}
+}
+
+/* Mobile: ≤767px */
+@media (max-width: 767px) {
+	:root {
+		--header-height: 52px;
+		--footer-height: 56px;
+		--section-pad-x: 12px;
+		--section-pad-y: 16px;
+	}
+
+	body {
+		background-image: none; /* remove grid on mobile for performance */
+	}
+
+	header {
+		padding: 0 12px;
+	}
+
+	header h1 {
+		font-size: 16px;
+	}
+
+	.step-indicator {
+		margin: 0 8px;
+		gap: 6px;
+	}
+
+	.progress-bar-container {
+		width: 80px;
+	}
+
+	.step-text {
+		font-size: 12px;
+	}
+
+	.visualization-container {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.array-container {
+		height: 40vh;
+		flex-shrink: 0;
+		border-radius: 8px;
+		padding: 12px;
+	}
+
+	.code-panel-wrapper {
+		height: 30vh;
+		flex-shrink: 0;
+		border-radius: 8px;
+		max-height: 30vh;
+	}
+
+	.code-panel {
+		font-size: 12px;
+	}
+
+	.section h1 {
+		font-size: 22px;
+	}
+
+	.section h2 {
+		font-size: 18px;
+	}
+
+	.analogy-cards {
+		grid-template-columns: 1fr;
+		gap: 10px;
+	}
+
+	.complexity-comparison {
+		grid-template-columns: 1fr;
+	}
+
+	footer {
+		padding: 6px 8px;
+		gap: 4px;
+	}
+
+	footer button {
+		padding: 8px 10px;
+		font-size: 14px;
+		min-width: 40px;
+		min-height: 40px;
+	}
+
+	#speed-slider,
+	#speed-slider-footer,
+	.speed-slider {
+		width: 100px;
+		-webkit-appearance: none;
+		appearance: none;
+		background: linear-gradient(to right, #7b3fa0, rgba(123, 63, 160, 0.35));
+	}
+
+	#speed-slider::-webkit-slider-thumb,
+	#speed-slider-footer::-webkit-slider-thumb,
+	.speed-slider::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		appearance: none;
+		width: 16px;
+		height: 16px;
+		border-radius: 50%;
+		background-color: #7b3fa0;
+		cursor: pointer;
+	}
+
+	#speed-slider::-moz-range-thumb,
+	#speed-slider-footer::-moz-range-thumb,
+	.speed-slider::-moz-range-thumb {
+		background-color: #7b3fa0;
+		border: none;
+	}
+
+	.speed-control label {
+		display: none; /* hide text label, keep slider */
+	}
+
+	#quiz-container {
+		max-width: 100%;
+	}
+
+	.question-text {
+		font-size: 15px;
+	}
+
+	.quiz-option {
+		padding: 10px 12px;
+	}
+
+	.complexity-table th,
+	.complexity-table td {
+		padding: 10px 12px;
+		font-size: 13px;
+	}
+}
+
+/* Very small screens */
+@media (max-width: 380px) {
+	:root {
+		--header-height: 48px;
+	}
+
+	header h1 {
+		font-size: 14px;
+	}
+
+	footer button {
+		min-width: 36px;
+		min-height: 36px;
+		font-size: 13px;
+		padding: 6px 8px;
+	}
+}

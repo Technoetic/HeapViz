@@ -1,0 +1,129 @@
+/* --------------------------------------------------------------------------
+   5. Section 1: Concept Introduction
+   -------------------------------------------------------------------------- */
+
+#intro .intro-question {
+	font-size: 18px;
+	font-weight: 500;
+	margin-bottom: 28px;
+	color: var(--color-accent);
+	line-height: 1.5;
+}
+
+/* Analogy cards — cassie.codes-style colorful card blocks */
+.analogy-cards {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 16px;
+	margin-bottom: 28px;
+}
+
+.analogy-card {
+	background-color: var(--bg-surface);
+	border: 2px solid var(--color-grid);
+	border-radius: 12px;
+	padding: 20px 16px;
+	text-align: center;
+	transition: all 0.25s var(--easing-bounce);
+	position: relative;
+	overflow: hidden;
+}
+
+.analogy-card::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(
+		135deg,
+		transparent 60%,
+		var(--color-grid-subtle)
+	);
+	opacity: 0;
+	transition: opacity 0.3s var(--easing-smooth);
+}
+
+.analogy-card:hover {
+	border-color: var(--color-accent);
+	transform: translateY(-6px);
+	box-shadow: var(--shadow-md), var(--shadow-neon);
+}
+
+.analogy-card:hover::before {
+	opacity: 1;
+}
+
+.analogy-card .emoji {
+	font-size: 36px;
+	margin-bottom: 10px;
+	display: block;
+}
+
+.analogy-card .title {
+	font-weight: 700;
+	font-size: 15px;
+	margin-bottom: 8px;
+	color: var(--text-primary);
+}
+
+.analogy-card .desc {
+	font-size: 13px;
+	color: var(--text-secondary);
+	line-height: 1.5;
+}
+
+/* Callout box — left-border accent, semi-transparent bg */
+.callout-box {
+	background-color: rgba(123, 63, 160, 0.1);
+	border-left: 4px solid var(--color-grid);
+	border-radius: 0 8px 8px 0;
+	padding: 16px 20px;
+	margin: 24px 0;
+	font-weight: 500;
+	color: var(--text-primary);
+	transition: border-color 0.3s var(--easing-smooth);
+}
+
+[data-theme="light"] .callout-box {
+	background-color: rgba(201, 184, 232, 0.15);
+}
+
+.callout-box:hover {
+	border-color: var(--color-accent);
+}
+
+/* Definition box */
+.definition-box {
+	background-color: var(--bg-surface);
+	border: 1px solid var(--color-grid);
+	padding: 20px;
+	border-radius: 10px;
+	margin-top: 24px;
+	font-size: 15px;
+	line-height: 1.7;
+	color: var(--text-primary);
+	box-shadow: var(--shadow-sm);
+}
+
+/* Start button */
+#start-btn {
+	background-color: var(--color-accent);
+	color: var(--bg-base);
+	border: none;
+	padding: 12px 28px;
+	border-radius: 8px;
+	font-size: 16px;
+	font-weight: 700;
+	cursor: pointer;
+	margin-top: 28px;
+	transition: all 0.25s var(--easing-bounce);
+	letter-spacing: 0.3px;
+}
+
+#start-btn:hover {
+	transform: scale(1.06) translateY(-2px);
+	box-shadow: var(--shadow-md), var(--bar-mid-glow);
+}
+
+#start-btn:active {
+	transform: scale(0.98);
+}
