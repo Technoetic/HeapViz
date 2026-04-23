@@ -1,0 +1,1955 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>비유 블로그 생성기</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" integrity="sha384-948ahk4ZmxYVYOc+rxN1H2gM1EJ2Duhp7uHtZ4WSLkV4Vtx5MUqnV+l7u9B+jFv+" crossorigin="anonymous"></script>
+  <style>
+/* main.css — 비유 블로그 생성기 스타일 */
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+body {
+	font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+	min-height: 100vh;
+	background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+	color: #fff;
+	padding: 24px;
+}
+
+.container {
+	max-width: 960px;
+	margin: 0 auto;
+}
+
+h1 {
+	font-size: 28px;
+	font-weight: 700;
+	margin-bottom: 8px;
+}
+
+.subtitle {
+	color: rgba(255, 255, 255, 0.5);
+	font-size: 14px;
+	margin-bottom: 32px;
+}
+
+/* ── 입력 패널 ── */
+.input-panel {
+	background: rgba(255, 255, 255, 0.08);
+	backdrop-filter: blur(12px);
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	border-radius: 16px;
+	padding: 28px;
+	margin-bottom: 24px;
+}
+
+.input-row {
+	display: flex;
+	gap: 12px;
+	margin-bottom: 16px;
+}
+
+.input-row:last-child {
+	margin-bottom: 0;
+}
+
+label {
+	display: block;
+	font-size: 12px;
+	color: rgba(255, 255, 255, 0.5);
+	text-transform: uppercase;
+	letter-spacing: 1px;
+	margin-bottom: 6px;
+}
+
+input[type="text"],
+select {
+	width: 100%;
+	padding: 12px 16px;
+	border-radius: 10px;
+	border: 1px solid rgba(255, 255, 255, 0.15);
+	background: rgba(255, 255, 255, 0.06);
+	color: #fff;
+	font-size: 15px;
+	outline: none;
+	transition: border-color 0.2s;
+}
+
+input[type="text"]:focus,
+select:focus {
+	border-color: #667eea;
+}
+
+select option {
+	background: #302b63;
+	color: #fff;
+}
+
+.flex-1 {
+	flex: 1;
+}
+.flex-auto {
+	flex: 0 0 140px;
+}
+
+.btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 14px 28px;
+	border-radius: 12px;
+	border: none;
+	font-size: 15px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.2s;
+	width: 100%;
+}
+
+.btn-primary {
+	background: linear-gradient(135deg, #667eea, #764ba2);
+	color: #fff;
+}
+
+.btn-primary:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+}
+.btn-primary:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+	transform: none;
+	box-shadow: none;
+}
+
+.btn-secondary {
+	background: rgba(255, 255, 255, 0.1);
+	color: #fff;
+	border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.btn-secondary:hover {
+	background: rgba(255, 255, 255, 0.15);
+}
+
+/* ── 파이프라인 상태 ── */
+.pipeline {
+	background: rgba(255, 255, 255, 0.06);
+	backdrop-filter: blur(12px);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 16px;
+	padding: 24px;
+	margin-bottom: 24px;
+	display: none;
+}
+
+.pipeline.active {
+	display: block;
+}
+
+.pipeline h2 {
+	font-size: 16px;
+	font-weight: 600;
+	margin-bottom: 16px;
+	color: rgba(255, 255, 255, 0.7);
+}
+
+.phase {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px 16px;
+	border-radius: 10px;
+	margin-bottom: 8px;
+	font-size: 14px;
+	transition: background 0.2s;
+}
+
+.phase:last-child {
+	margin-bottom: 0;
+}
+
+.phase-icon {
+	width: 28px;
+	height: 28px;
+	border-radius: 8px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 14px;
+	flex-shrink: 0;
+}
+
+.phase.waiting .phase-icon {
+	background: rgba(255, 255, 255, 0.08);
+}
+.phase.running .phase-icon {
+	background: rgba(102, 126, 234, 0.3);
+}
+.phase.done .phase-icon {
+	background: rgba(76, 175, 80, 0.3);
+}
+.phase.fail .phase-icon {
+	background: rgba(244, 67, 54, 0.3);
+}
+
+.phase.running {
+	background: rgba(102, 126, 234, 0.08);
+}
+.phase.done {
+	background: rgba(76, 175, 80, 0.05);
+}
+.phase.fail {
+	background: rgba(244, 67, 54, 0.05);
+}
+
+.phase-label {
+	flex: 1;
+}
+.phase-time {
+	font-size: 12px;
+	color: rgba(255, 255, 255, 0.4);
+}
+
+@keyframes spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+.spinner {
+	width: 16px;
+	height: 16px;
+	border: 2px solid rgba(102, 126, 234, 0.3);
+	border-top-color: #667eea;
+	border-radius: 50%;
+	animation: spin 0.8s linear infinite;
+}
+
+/* ── 비용 요약 ── */
+.cost-bar {
+	display: flex;
+	gap: 16px;
+	padding: 12px 16px;
+	background: rgba(255, 255, 255, 0.04);
+	border-radius: 10px;
+	margin-top: 12px;
+	font-size: 13px;
+	color: rgba(255, 255, 255, 0.5);
+}
+
+.cost-bar span {
+	color: #fff;
+	font-weight: 600;
+}
+
+/* ── 결과 패널 ── */
+.result-panel {
+	background: rgba(255, 255, 255, 0.06);
+	backdrop-filter: blur(12px);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 16px;
+	overflow: hidden;
+	display: none;
+}
+
+.result-panel.active {
+	display: block;
+}
+
+.result-tabs {
+	display: flex;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.result-tab {
+	flex: 1;
+	padding: 14px;
+	text-align: center;
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+	color: rgba(255, 255, 255, 0.5);
+	transition: all 0.2s;
+	border-bottom: 2px solid transparent;
+}
+
+.result-tab.active {
+	color: #fff;
+	border-bottom-color: #667eea;
+	background: rgba(102, 126, 234, 0.05);
+}
+
+.result-tab:hover {
+	color: rgba(255, 255, 255, 0.8);
+}
+
+.result-content {
+	padding: 24px;
+	max-height: 600px;
+	overflow-y: auto;
+}
+
+.result-content::-webkit-scrollbar {
+	width: 6px;
+}
+.result-content::-webkit-scrollbar-thumb {
+	background: rgba(255, 255, 255, 0.15);
+	border-radius: 3px;
+}
+
+.result-pane {
+	display: none;
+}
+.result-pane.active {
+	display: block;
+}
+
+.blog-preview {
+	font-size: 15px;
+	line-height: 1.8;
+	color: rgba(255, 255, 255, 0.85);
+}
+
+.blog-preview h2 {
+	font-size: 22px;
+	margin: 28px 0 12px;
+	padding-bottom: 8px;
+	border-bottom: 2px solid #667eea;
+	color: #fff;
+}
+.blog-preview h3 {
+	font-size: 18px;
+	margin: 20px 0 8px;
+	color: rgba(255, 255, 255, 0.9);
+}
+
+.blog-preview blockquote {
+	border-left: 4px solid #667eea;
+	padding: 12px 20px;
+	margin: 16px 0;
+	background: rgba(102, 126, 234, 0.08);
+	border-radius: 0 8px 8px 0;
+	font-size: 14px;
+	color: rgba(255, 255, 255, 0.7);
+}
+
+.blog-preview blockquote strong {
+	color: #667eea;
+}
+
+.blog-preview table {
+	width: 100%;
+	border-collapse: collapse;
+	margin: 16px 0;
+	font-size: 14px;
+}
+
+.blog-preview th {
+	background: rgba(102, 126, 234, 0.3);
+	padding: 10px 14px;
+	text-align: left;
+	font-weight: 600;
+	color: #fff;
+}
+
+.blog-preview td {
+	padding: 10px 14px;
+	border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.blog-preview tr:nth-child(even) {
+	background: rgba(255, 255, 255, 0.03);
+}
+
+.blog-preview pre {
+	background: rgba(0, 0, 0, 0.4);
+	padding: 16px 20px;
+	border-radius: 10px;
+	overflow-x: auto;
+	font-size: 13px;
+	line-height: 1.6;
+	margin: 16px 0;
+}
+
+.blog-preview code {
+	font-family: "Consolas", "Monaco", monospace, "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+}
+
+.blog-preview p code {
+	background: rgba(255, 255, 255, 0.1);
+	padding: 2px 6px;
+	border-radius: 4px;
+	font-size: 13px;
+	color: #f093fb;
+}
+
+.blog-preview hr {
+	border: none;
+	border-top: 1px solid rgba(255, 255, 255, 0.1);
+	margin: 24px 0;
+}
+
+.blog-preview ul,
+.blog-preview ol {
+	padding-left: 1.5em;
+	margin: 12px 0;
+}
+.blog-preview li {
+	margin: 4px 0;
+	line-height: 1.7;
+}
+.blog-preview strong {
+	color: #fff;
+}
+.blog-preview img {
+	max-width: 100%;
+	height: auto;
+	border-radius: 12px;
+	margin: 16px auto;
+	display: block;
+	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.report-json {
+	font-family: "Consolas", "Monaco", monospace;
+	font-size: 13px;
+	line-height: 1.6;
+	color: #a5d6a7;
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+.btn-row {
+	display: flex;
+	gap: 12px;
+	padding: 16px 24px;
+	border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-row .btn {
+	width: auto;
+	flex: 1;
+	padding: 12px 20px;
+	font-size: 14px;
+}
+
+/* ── 에러 ── */
+.error-msg {
+	background: rgba(244, 67, 54, 0.1);
+	border: 1px solid rgba(244, 67, 54, 0.3);
+	border-radius: 10px;
+	padding: 16px;
+	margin-top: 16px;
+	font-size: 14px;
+	color: #ef9a9a;
+	display: none;
+}
+
+.error-msg.active {
+	display: block;
+}
+
+/* ── 반응형 ── */
+@media (max-width: 640px) {
+	.input-row {
+		flex-direction: column;
+	}
+	.flex-auto {
+		flex: 1 1 auto;
+	}
+	.result-tabs {
+		flex-wrap: wrap;
+	}
+	.result-tab {
+		flex: 0 0 50%;
+	}
+}
+
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>비유 블로그 생성기</h1>
+    <p class="subtitle">BizRouter + Gemini 2.5 Flash | 6-Agent Pipeline | Blogger 자동 발행</p>
+
+    <!-- 입력 패널 -->
+    <div class="input-panel">
+      <div class="input-row">
+        <div class="flex-1">
+          <label>기술 주제</label>
+          <input type="text" id="topic" placeholder="예: API 게이트웨이, Docker 컨테이너, OAuth2 인증...">
+        </div>
+      </div>
+      <div class="input-row">
+        <div class="flex-auto">
+          <label>톤</label>
+          <select id="tone">
+            <option value="친근">친근 (기본)</option>
+            <option value="전문">전문</option>
+            <option value="유머">유머</option>
+          </select>
+        </div>
+        <div class="flex-auto">
+          <label>이미지 비율</label>
+          <select id="ratio">
+            <option value="16:9">16:9 (기본)</option>
+            <option value="1:1">1:1</option>
+            <option value="4:3">4:3</option>
+            <option value="9:16">9:16</option>
+          </select>
+        </div>
+        <div class="flex-auto">
+          <label>발행 방식</label>
+          <select id="publish">
+            <option value="public">즉시 공개</option>
+            <option value="draft">초안 저장</option>
+            <option value="local">로컬만 저장</option>
+          </select>
+        </div>
+      </div>
+      <div class="input-row">
+        <div class="flex-1">
+          <button type="button" class="btn btn-secondary" id="loginBtn" onclick="doGoogleLogin()">Google 로그인</button>
+        </div>
+        <div class="flex-1">
+          <button type="button" class="btn btn-primary" id="generateBtn" onclick="startPipeline()">블로그 생성하기</button>
+        </div>
+      </div>
+      <div id="loginStatus" style="font-size:12px; color:rgba(255,255,255,0.4); margin-top:8px; display:none;"></div>
+    </div>
+
+    <!-- 파이프라인 상태 -->
+    <div class="pipeline" id="pipeline">
+      <h2>파이프라인 진행 상황</h2>
+      <div class="phase waiting" id="phase1">
+        <div class="phase-icon">1</div>
+        <div class="phase-label">Phase 1 — 주제 분석 & 비유 후보 선정</div>
+        <div class="phase-time" id="phase1-time"></div>
+      </div>
+      <div class="phase waiting" id="phase2a">
+        <div class="phase-icon">2a</div>
+        <div class="phase-label">Phase 2a — Agent ① 비유설계 → Agent ④ 검증</div>
+        <div class="phase-time" id="phase2a-time"></div>
+      </div>
+      <div class="phase waiting" id="phase2b">
+        <div class="phase-icon">2b</div>
+        <div class="phase-label">Phase 2b — Agent ②③ 글작성 + 이미지프롬프트 (병렬)</div>
+        <div class="phase-time" id="phase2b-time"></div>
+      </div>
+      <div class="phase waiting" id="phase3a">
+        <div class="phase-icon">3a</div>
+        <div class="phase-label">Phase 3a — Agent ④ 검증 (②③ 출력)</div>
+        <div class="phase-time" id="phase3a-time"></div>
+      </div>
+      <div class="phase waiting" id="phase3b">
+        <div class="phase-icon">3b</div>
+        <div class="phase-label">Phase 3b — Agent ⑥ 팩트체크</div>
+        <div class="phase-time" id="phase3b-time"></div>
+      </div>
+      <div class="phase waiting" id="phase3c">
+        <div class="phase-icon">3c</div>
+        <div class="phase-label">Phase 3c — 블로그 조립</div>
+        <div class="phase-time" id="phase3c-time"></div>
+      </div>
+      <div class="phase waiting" id="phase4">
+        <div class="phase-icon">4</div>
+        <div class="phase-label">Phase 4 — Agent ⑤ 품질 평가</div>
+        <div class="phase-time" id="phase4-time"></div>
+      </div>
+      <div class="phase waiting" id="phase5">
+        <div class="phase-icon">5</div>
+        <div class="phase-label">Phase 5 — Blogger 발행</div>
+        <div class="phase-time" id="phase5-time"></div>
+      </div>
+
+      <div class="cost-bar" id="costBar" style="display:none;">
+        총 토큰: <span id="totalTokens">0</span> &nbsp;|&nbsp;
+        예상 비용: <span id="totalCost">₩0</span> &nbsp;|&nbsp;
+        총 소요: <span id="totalTime">0초</span>
+      </div>
+    </div>
+
+    <!-- 에러 메시지 -->
+    <div class="error-msg" id="errorMsg"></div>
+
+    <!-- 결과 패널 -->
+    <div class="result-panel" id="resultPanel">
+      <div class="result-tabs">
+        <div class="result-tab active" onclick="showTab('preview')">블로그 미리보기</div>
+        <div class="result-tab" onclick="showTab('design')">비유설계서</div>
+        <div class="result-tab" onclick="showTab('verify')">검증 리포트</div>
+        <div class="result-tab" onclick="showTab('factcheck')">팩트체크</div>
+        <div class="result-tab" onclick="showTab('eval')">평가 리포트</div>
+        <div class="result-tab" onclick="showTab('prompts')">이미지 프롬프트</div>
+      </div>
+      <div class="result-content">
+        <div class="result-pane active" id="pane-preview">
+          <div class="blog-preview" id="blogPreview"></div>
+        </div>
+        <div class="result-pane" id="pane-design">
+          <pre class="report-json" id="designReport"></pre>
+        </div>
+        <div class="result-pane" id="pane-verify">
+          <pre class="report-json" id="verifyReport"></pre>
+        </div>
+        <div class="result-pane" id="pane-factcheck">
+          <pre class="report-json" id="factcheckReport"></pre>
+        </div>
+        <div class="result-pane" id="pane-eval">
+          <pre class="report-json" id="evalReport"></pre>
+        </div>
+        <div class="result-pane" id="pane-prompts">
+          <pre class="report-json" id="promptsReport"></pre>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button type="button" class="btn btn-secondary" onclick="copyBlog()">블로그 복사</button>
+        <button type="button" class="btn btn-secondary" onclick="downloadAll()">전체 다운로드</button>
+        <button type="button" class="btn btn-primary" id="publishBtn" onclick="publishToBlogger()" style="display:none;">Blogger 발행</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+// config.js — API 키, 모델 설정, OAuth 설정
+class Config {
+	static BIZROUTER_URL = "https://api.bizrouter.ai/v1/chat/completions";
+	static BIZROUTER_KEY =
+		"sk-br-v1-ab47dd953c844611a9dda14f3a60fa54_uE2bL5jqIHgfnYnvP7pSxieymu10ORU9I_H-Gn7aCgU";
+	static MODEL = "google/gemini-2.5-flash-lite";
+	static IMAGE_MODEL = "google/gemini-2.5-flash-image";
+	static IMGUR_PROXY_URL = "/api/imgur-upload";
+	static GOOGLE_CLIENT_ID =
+		"835887967219-16jq3t5opvkumi55q6c63cglq9ksncg6.apps.googleusercontent.com";
+	static BLOGGER_SCOPE = "https://www.googleapis.com/auth/blogger";
+	static PHASES = [
+		"phase1",
+		"phase2a",
+		"phase2b",
+		"phase3a",
+		"phase3b",
+		"phase3c",
+		"phase4",
+		"phase5",
+	];
+}
+
+</script>
+  <script>
+// ApiClient.js — BizRouter API, 이미지 생성, Imgur 업로드
+class ApiClient {
+	static async callAgent(systemPrompt, userMessages, options = {}) {
+		const messages = [
+			{ role: "system", content: systemPrompt },
+			...userMessages.map((m) => ({
+				role: "user",
+				content: typeof m === "string" ? m : JSON.stringify(m),
+			})),
+		];
+
+		const body = {
+			model: Config.MODEL,
+			messages,
+			temperature: options.temperature ?? 0.7,
+			thinking_budget: options.thinking_budget ?? 0,
+			stream: false,
+		};
+
+		if (options.response_schema) {
+			body.response_format = {
+				type: "json_schema",
+				json_schema: {
+					name: options.schema_name || "response",
+					strict: true,
+					schema: options.response_schema,
+				},
+			};
+		} else {
+			body.response_format = { type: "json_object" };
+		}
+
+		if (options.tools) {
+			body.tools = options.tools;
+		}
+
+		const res = await fetch(Config.BIZROUTER_URL, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: `Bearer ${Config.BIZROUTER_KEY}`,
+			},
+			body: JSON.stringify(body),
+		});
+
+		if (!res.ok) {
+			const err = await res.text();
+			throw new Error(`API 오류 (${res.status}): ${err}`);
+		}
+
+		const data = await res.json();
+		const content = data.choices[0].message.content;
+		const usage = data.usage || {};
+
+		let parsed;
+		if (typeof content === "string") {
+			try {
+				parsed = JSON.parse(content);
+			} catch (e) {
+				const jsonMatch =
+					content.match(/```json\s*([\s\S]*?)```/) ||
+					content.match(/(\{[\s\S]*\})/);
+				if (jsonMatch) {
+					parsed = JSON.parse(jsonMatch[1].trim());
+				} else {
+					throw new Error(`JSON 파싱 실패: ${content.substring(0, 200)}`);
+				}
+			}
+		} else {
+			parsed = content;
+		}
+
+		return { data: parsed, usage };
+	}
+
+	static async generateImage(prompt, aspectRatio = "16:9") {
+		try {
+			const res = await fetch(Config.BIZROUTER_URL, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${Config.BIZROUTER_KEY}`,
+				},
+				body: JSON.stringify({
+					model: Config.IMAGE_MODEL,
+					messages: [
+						{
+							role: "user",
+							content:
+								prompt +
+								"\n\nIMPORTANT: Any text in the image must be in English only. Do NOT use Korean, Japanese, Chinese or any non-Latin script. English text labels, signs, and typography are encouraged.",
+						},
+					],
+					aspect_ratio: aspectRatio,
+					stream: false,
+				}),
+			});
+
+			if (!res.ok) {
+				console.warn("이미지 API 응답 오류:", res.status);
+				return null;
+			}
+
+			const data = await res.json();
+			const content = data.choices?.[0]?.message?.content;
+
+			if (Array.isArray(content)) {
+				const img = content.find((c) => c.type === "image_url");
+				if (img) return img.image_url.url;
+			}
+			return null;
+		} catch (e) {
+			console.warn("이미지 생성 예외:", e.message);
+			return null;
+		}
+	}
+
+	static async uploadToImgur(base64DataUrl) {
+		try {
+			const base64 = base64DataUrl.replace(/^data:image\/\w+;base64,/, "");
+			const res = await fetch(Config.IMGUR_PROXY_URL, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ image: base64 }),
+			});
+			if (!res.ok) return null;
+			const data = await res.json();
+			return data.link || null;
+		} catch (e) {
+			console.warn("Imgur 업로드 실패:", e.message);
+			return null;
+		}
+	}
+}
+
+</script>
+  <script>
+// BlogAssembler.js — 마크다운 → HTML 변환, 블로그 조립
+class BlogAssembler {
+	static markdownToHtml(md) {
+		marked.setOptions({ breaks: true, gfm: true });
+
+		const processed = md.replace(
+			/<!--\s*IMAGE:\s*(\w+)\s*-->/g,
+			'<div style="text-align:center;padding:16px 0;"><span style="background:#667eea22;border:1px dashed #667eea;border-radius:8px;padding:8px 20px;font-size:13px;color:#667eea;">🖼️ Image: $1</span></div>',
+		);
+
+		const html = marked.parse(processed);
+
+		const bloggerStyles = `
+<style>
+  .blog-content h2 { font-size: 1.5em; margin: 1.5em 0 0.5em; padding-bottom: 0.3em; border-bottom: 2px solid #667eea; color: #333; }
+  .blog-content h3 { font-size: 1.2em; margin: 1.2em 0 0.4em; color: #555; }
+  .blog-content table { width: 100%; border-collapse: collapse; margin: 1em 0; font-size: 0.95em; }
+  .blog-content th { background: #667eea; color: #fff; padding: 10px 14px; text-align: left; font-weight: 600; }
+  .blog-content td { padding: 10px 14px; border: 1px solid #e0e0e0; }
+  .blog-content tr:nth-child(even) { background: #f8f9ff; }
+  .blog-content pre { background: #1e1e2e; color: #cdd6f4; padding: 16px 20px; border-radius: 10px; overflow-x: auto; font-size: 0.9em; line-height: 1.6; margin: 1em 0; }
+  .blog-content code { font-family: 'Consolas', 'Monaco', monospace, 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; }
+  .blog-content p code { background: #f0f0f5; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; color: #e53e3e; }
+  .blog-content blockquote { border-left: 4px solid #667eea; background: #f8f9ff; padding: 12px 20px; margin: 1em 0; border-radius: 0 8px 8px 0; color: #444; }
+  .blog-content blockquote strong { color: #667eea; }
+  .blog-content hr { border: none; border-top: 1px solid #e0e0e0; margin: 2em 0; }
+  .blog-content ul, .blog-content ol { padding-left: 1.5em; margin: 0.8em 0; }
+  .blog-content li { margin: 0.3em 0; line-height: 1.7; }
+  .blog-content strong { color: #333; }
+  .blog-content p { line-height: 1.8; margin: 0.8em 0; }
+  .blog-content img { max-width: 100%; height: auto; border-radius: 12px; margin: 1.5em auto; display: block; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+</style>`;
+
+		return `${bloggerStyles}<div class="blog-content">${html}</div>`;
+	}
+
+	static assemble(blog, prompts, images, imageUrls) {
+		const introImg = images?.intro;
+		const middleImg = images?.middle;
+		const outroImg = images?.outro;
+		const introUrl = imageUrls?.intro;
+		const middleUrl = imageUrls?.middle;
+		const outroUrl = imageUrls?.outro;
+
+		// 미리보기용: base64
+		const introBlock = introImg
+			? `![인트로](${introImg})`
+			: `> 🖼️ ${prompts.intro_prompt}`;
+		const middleBlock = middleImg
+			? `![중간](${middleImg})`
+			: `> 🖼️ ${prompts.middle_prompt}`;
+		const outroBlock = outroImg
+			? `![아웃트로](${outroImg})`
+			: `> 🖼️ ${prompts.outro_prompt}`;
+		const assembled = `${introBlock}\n\n${blog.front_half}\n\n${middleBlock}\n\n${blog.back_half}\n\n${outroBlock}`;
+
+		// Blogger 발행용: Imgur URL
+		const introPub = introUrl
+			? `![인트로](${introUrl})`
+			: `> 🖼️ ${prompts.intro_prompt}`;
+		const middlePub = middleUrl
+			? `![중간](${middleUrl})`
+			: `> 🖼️ ${prompts.middle_prompt}`;
+		const outroPub = outroUrl
+			? `![아웃트로](${outroUrl})`
+			: `> 🖼️ ${prompts.outro_prompt}`;
+		const assembledPublish = `${introPub}\n\n${blog.front_half}\n\n${middlePub}\n\n${blog.back_half}\n\n${outroPub}`;
+
+		// 평가용: 텍스트만
+		const assembledText = `> 🖼️ ${prompts.intro_prompt}\n\n${blog.front_half}\n\n> 🖼️ ${prompts.middle_prompt}\n\n${blog.back_half}\n\n> 🖼️ ${prompts.outro_prompt}`;
+
+		return { assembled, assembledPublish, assembledText };
+	}
+
+	static copyBlog(results) {
+		navigator.clipboard
+			.writeText(results.assembled || "")
+			.then(() => alert("블로그가 클립보드에 복사되었습니다."));
+	}
+
+	static downloadAll(results) {
+		const blob = new Blob([JSON.stringify(results, null, 2)], {
+			type: "application/json",
+		});
+		const a = document.createElement("a");
+		a.href = URL.createObjectURL(blob);
+		a.download = `${results.contextPacket?.topic || "blog"}_results.json`;
+		a.click();
+	}
+}
+
+</script>
+  <script>
+// PipelineUI.js — Phase 상태 관리, 비용 표시, 탭 전환, 결과 표시
+class PipelineUI {
+	static setPhase(id, state, timeMs) {
+		const el = document.getElementById(id);
+		el.className = `phase ${state}`;
+		const icon = el.querySelector(".phase-icon");
+		if (state === "running") icon.innerHTML = '<div class="spinner"></div>';
+		else if (state === "done") icon.textContent = "\u2713";
+		else if (state === "fail") icon.textContent = "\u2717";
+
+		if (timeMs !== undefined) {
+			document.getElementById(`${id}-time`).textContent =
+				`${(timeMs / 1000).toFixed(1)}s`;
+		}
+	}
+
+	static resetPipeline() {
+		Config.PHASES.forEach((id) => {
+			PipelineUI.setPhase(id, "waiting");
+			document.getElementById(`${id}-time`).textContent = "";
+		});
+		document.getElementById("costBar").style.display = "none";
+		document.getElementById("errorMsg").className = "error-msg";
+		document.getElementById("resultPanel").className = "result-panel";
+	}
+
+	static async timed(phaseId, fn) {
+		PipelineUI.setPhase(phaseId, "running");
+		const start = Date.now();
+		try {
+			const result = await fn();
+			PipelineUI.setPhase(phaseId, "done", Date.now() - start);
+			return result;
+		} catch (e) {
+			PipelineUI.setPhase(phaseId, "fail", Date.now() - start);
+			throw e;
+		}
+	}
+
+	static showResults(results) {
+		document.getElementById("resultPanel").className = "result-panel active";
+		document.getElementById("blogPreview").innerHTML =
+			BlogAssembler.markdownToHtml(results.assembled || "");
+		document.getElementById("designReport").textContent = JSON.stringify(
+			results.design,
+			null,
+			2,
+		);
+		document.getElementById("verifyReport").textContent = JSON.stringify(
+			results.verify,
+			null,
+			2,
+		);
+		document.getElementById("factcheckReport").textContent = JSON.stringify(
+			results.factcheck,
+			null,
+			2,
+		);
+		document.getElementById("evalReport").textContent = JSON.stringify(
+			results.eval,
+			null,
+			2,
+		);
+		document.getElementById("promptsReport").textContent = JSON.stringify(
+			results.prompts,
+			null,
+			2,
+		);
+
+		if (results.published?.status === "ready") {
+			document.getElementById("publishBtn").style.display = "block";
+			document.getElementById("publishBtn").textContent = "Blogger 발행";
+			document.getElementById("publishBtn").disabled = false;
+		} else if (results.published?.status === "published") {
+			document.getElementById("publishBtn").style.display = "block";
+			document.getElementById("publishBtn").textContent = "발행 완료 — 보기";
+			document.getElementById("publishBtn").disabled = false;
+			document.getElementById("publishBtn").onclick = () =>
+				window.open(results.published.url, "_blank");
+		}
+	}
+
+	static showTab(name, clickedEl) {
+		document
+			.querySelectorAll(".result-tab")
+			.forEach((t) => { t.classList.remove("active"); });
+		document
+			.querySelectorAll(".result-pane")
+			.forEach((p) => { p.classList.remove("active"); });
+		if (clickedEl) clickedEl.classList.add("active");
+		document.getElementById(`pane-${name}`).classList.add("active");
+	}
+
+	static showCost(totalTokens, totalCost, totalTime) {
+		document.getElementById("costBar").style.display = "flex";
+		document.getElementById("totalTokens").textContent =
+			totalTokens.toLocaleString();
+		document.getElementById("totalCost").textContent =
+			`\u20A9${Math.round(totalCost).toLocaleString()}`;
+		document.getElementById("totalTime").textContent =
+			`${totalTime.toFixed(1)}초`;
+	}
+
+	static showError(message) {
+		const errEl = document.getElementById("errorMsg");
+		errEl.textContent = message;
+		errEl.className = "error-msg active";
+	}
+}
+
+</script>
+  <script>
+// AuthManager.js — Google OAuth2, Blogger API
+class AuthManager {
+	static googleAccessToken = sessionStorage.getItem("google_token") || null;
+	static bloggerBlogId = sessionStorage.getItem("blogger_blog_id") || null;
+
+	static googleLogin(results) {
+		if (results && results.assembled) {
+			const saveResults = {
+				...results,
+				images: null,
+				assembled: results.assembledPublish || results.assembledText,
+			};
+			localStorage.setItem("blog_results", JSON.stringify(saveResults));
+			localStorage.setItem(
+				"blog_publish_mode",
+				document.getElementById("publish").value,
+			);
+		}
+
+		const redirectUri = window.location.origin + window.location.pathname;
+		const authUrl =
+			"https://accounts.google.com/o/oauth2/v2/auth?" +
+			new URLSearchParams({
+				client_id: Config.GOOGLE_CLIENT_ID,
+				redirect_uri: redirectUri,
+				response_type: "token",
+				scope: Config.BLOGGER_SCOPE,
+				prompt: "consent",
+			}).toString();
+
+		window.location.href = authUrl;
+		return new Promise(() => {});
+	}
+
+	static doGoogleLogin() {
+		localStorage.setItem("blog_login_only", "true");
+		AuthManager.googleLogin({});
+	}
+
+	static async getBloggerBlogs() {
+		const res = await fetch(
+			"https://www.googleapis.com/blogger/v3/users/self/blogs",
+			{
+				headers: { Authorization: `Bearer ${AuthManager.googleAccessToken}` },
+			},
+		);
+		if (!res.ok) throw new Error(`Blogger API 오류: ${res.status}`);
+		const data = await res.json();
+		return data.items || [];
+	}
+
+	static async publishToBlogger(results) {
+		const publishMode = document.getElementById("publish").value;
+
+		try {
+			if (!AuthManager.googleAccessToken) {
+				document.getElementById("publishBtn").textContent =
+					"Google 로그인 중...";
+				await AuthManager.googleLogin(results);
+			}
+
+			if (!AuthManager.bloggerBlogId) {
+				document.getElementById("publishBtn").textContent = "블로그 확인 중...";
+				const blogs = await AuthManager.getBloggerBlogs();
+				if (blogs.length === 0) {
+					alert("Blogger에 블로그가 없습니다.");
+					return;
+				}
+				if (blogs.length === 1) {
+					AuthManager.bloggerBlogId = blogs[0].id;
+					sessionStorage.setItem("blogger_blog_id", AuthManager.bloggerBlogId);
+				} else {
+					const names = blogs.map((b, i) => `${i + 1}. ${b.name}`).join("\n");
+					const choice = prompt(
+						`발행할 블로그를 선택하세요:\n${names}\n\n번호 입력:`,
+					);
+					if (!choice) return;
+					AuthManager.bloggerBlogId = blogs[parseInt(choice) - 1]?.id;
+					if (!AuthManager.bloggerBlogId) {
+						alert("잘못된 선택입니다.");
+						return;
+					}
+					sessionStorage.setItem("blogger_blog_id", AuthManager.bloggerBlogId);
+				}
+			}
+
+			document.getElementById("publishBtn").textContent = "발행 중...";
+			const htmlContent = BlogAssembler.markdownToHtml(
+				results.assembledPublish ||
+					results.assembledText ||
+					results.assembled ||
+					"",
+			);
+			const title = `${results.design?.confirmed_analogy || "비유"} — ${results.contextPacket?.topic || "기술 블로그"}`;
+
+			const isDraft = publishMode === "draft";
+			const postUrl = `https://www.googleapis.com/blogger/v3/blogs/${AuthManager.bloggerBlogId}/posts${isDraft ? "?isDraft=true" : ""}`;
+
+			const res = await fetch(postUrl, {
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${AuthManager.googleAccessToken}`,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					kind: "blogger#post",
+					title: title,
+					content: htmlContent,
+					labels: ["기술블로그", "비유", results.contextPacket?.topic || ""],
+				}),
+			});
+
+			if (!res.ok) {
+				if (res.status === 401) {
+					AuthManager.googleAccessToken = null;
+					sessionStorage.removeItem("google_token");
+					alert("Google 토큰이 만료되었습니다. 다시 로그인합니다.");
+					AuthManager.googleLogin(results);
+					return;
+				}
+				const err = await res.text();
+				throw new Error(`발행 실패 (${res.status}): ${err}`);
+			}
+
+			const post = await res.json();
+			results.published = {
+				status: "published",
+				url: post.url,
+				postId: post.id,
+				publishedAt: post.published,
+			};
+
+			alert(
+				`발행 완료!\n\n${isDraft ? "초안" : "공개"}으로 저장되었습니다.\nURL: ${post.url}`,
+			);
+			document.getElementById("publishBtn").textContent = "발행 완료";
+			document.getElementById("publishBtn").disabled = true;
+		} catch (e) {
+			alert(`발행 오류: ${e.message}`);
+			document.getElementById("publishBtn").textContent = "Blogger 발행";
+		}
+	}
+
+	static checkRedirectToken() {
+		const hash = window.location.hash;
+		if (hash && hash.includes("access_token")) {
+			const params = new URLSearchParams(hash.substring(1));
+			AuthManager.googleAccessToken = params.get("access_token");
+			sessionStorage.setItem("google_token", AuthManager.googleAccessToken);
+			window.history.replaceState(null, "", window.location.pathname);
+			return true;
+		}
+		return false;
+	}
+
+	static updateLoginUI() {
+		const loginBtn = document.getElementById("loginBtn");
+		const statusEl = document.getElementById("loginStatus");
+		if (AuthManager.googleAccessToken) {
+			loginBtn.textContent = "로그인 완료";
+			loginBtn.disabled = true;
+			loginBtn.style.opacity = "0.5";
+			statusEl.textContent = "Google 계정 연결됨 — 발행 준비 완료";
+			statusEl.style.display = "block";
+		}
+	}
+}
+
+</script>
+  <script>
+// Pipeline.js — 파이프라인 오케스트레이터 (Phase 1~5)
+class Pipeline {
+	constructor() {
+		this.results = {};
+		this.totalTokens = 0;
+		this.totalCost = 0;
+		this.startTime = 0;
+	}
+
+	async run() {
+		const topic = document.getElementById("topic").value.trim();
+		if (!topic) {
+			alert("기술 주제를 입력하세요.");
+			return;
+		}
+
+		const tone = document.getElementById("tone").value;
+		const ratio = document.getElementById("ratio").value;
+		const publishMode = document.getElementById("publish").value;
+
+		document.getElementById("generateBtn").disabled = true;
+		document.getElementById("pipeline").className = "pipeline active";
+		PipelineUI.resetPipeline();
+		this.results = {};
+		this.totalTokens = 0;
+		this.totalCost = 0;
+		this.startTime = Date.now();
+
+		try {
+			await this._phase1(topic, tone, ratio);
+			await this._phase2a();
+			await this._phase2b(tone, ratio);
+			await this._phase3a(tone);
+			await this._phase3b();
+			await this._phase3c(ratio);
+			await this._phase4();
+			await this._phase5(publishMode);
+
+			PipelineUI.showCost(
+				this.totalTokens,
+				this.totalCost,
+				(Date.now() - this.startTime) / 1000,
+			);
+			PipelineUI.showResults(this.results);
+		} catch (e) {
+			PipelineUI.showError(e.message);
+		}
+
+		document.getElementById("generateBtn").disabled = false;
+	}
+
+	_track(usage) {
+		this.totalTokens += usage.total_tokens || 0;
+		this.totalCost += usage.cost || 0;
+	}
+
+	// Phase 1: 웹 검색 + 주제 분석
+	async _phase1(topic, tone, ratio) {
+		const result = await PipelineUI.timed("phase1", async () => {
+			let researchContext = "";
+			try {
+				const searchResult = await ApiClient.callAgent(
+					`당신은 기술 리서처입니다. 주어진 기술 주제에 대해 웹 검색을 수행하고, 블로그 작성에 필요한 핵심 정보를 정리하세요.
+정리할 내용: 정의, 핵심 개념 3~5가지, 작동 원리, 주요 사용 사례, 장단점.
+검색 결과를 바탕으로 사실에 기반한 정보만 정리하세요.`,
+					[`기술 주제: ${topic}`],
+					{
+						thinking_budget: 1024,
+						temperature: 0.0,
+						tools: [
+							{
+								type: "function",
+								function: {
+									name: "google_search",
+									description: "기술 주제에 대한 정보를 검색합니다",
+								},
+							},
+						],
+						schema_name: "research",
+						response_schema: {
+							type: "object",
+							properties: {
+								topic: { type: "string" },
+								definition: { type: "string" },
+								key_concepts: { type: "array", items: { type: "string" } },
+								how_it_works: { type: "string" },
+								use_cases: { type: "array", items: { type: "string" } },
+								pros_cons: { type: "string" },
+							},
+							required: ["topic", "definition", "key_concepts", "how_it_works"],
+						},
+					},
+				);
+				researchContext = JSON.stringify(searchResult.data);
+				this._track(searchResult.usage);
+			} catch (e) {
+				console.warn("주제 조사 실패:", e.message);
+			}
+
+			return ApiClient.callAgent(
+				`당신은 비유 블로그 오케스트레이터입니다. 기술 주제와 조사 결과를 받으면:
+1. 핵심 개념 3가지 추출 (조사 결과 참고)
+2. 각 개념에 1:1 대응하는 비유 후보 3개 도출
+3. 최적 비유 1개 확정
+4. 에이전트 컨텍스트 패킷을 JSON으로 생성
+
+## 주제 조사 결과 (웹 검색 기반)
+${researchContext || "조사 결과 없음 — 모델 지식으로 진행"}
+
+중요: 모든 출력(confirmed_analogy, analogy_protagonist, analogy_space, structure_mapping 등)은 반드시 한국어로 작성하라.`,
+				[`기술 주제: ${topic}\n톤: ${tone}\n이미지 비율: ${ratio}`],
+				{
+					thinking_budget: 2048,
+					schema_name: "context_packet",
+					response_schema: {
+						type: "object",
+						properties: {
+							topic: { type: "string" },
+							confirmed_analogy: { type: "string" },
+							analogy_protagonist: { type: "string" },
+							analogy_space: { type: "string" },
+							structure_mapping: {
+								type: "array",
+								items: {
+									type: "object",
+									properties: {
+										tech: { type: "string" },
+										analogy: { type: "string" },
+									},
+									required: ["tech", "analogy"],
+								},
+							},
+							keywords: {
+								type: "array",
+								items: { type: "string" },
+								description: "IT/CS 기술 전문 용어만",
+							},
+							image_ratio: { type: "string" },
+							tone: { type: "string" },
+						},
+						required: [
+							"topic",
+							"confirmed_analogy",
+							"analogy_protagonist",
+							"analogy_space",
+							"structure_mapping",
+							"keywords",
+							"image_ratio",
+							"tone",
+						],
+					},
+				},
+			);
+		});
+		this.results.contextPacket = result.data;
+		this._track(result.usage);
+	}
+
+	// Phase 2a: 비유설계 + 검증
+	async _phase2a() {
+		await PipelineUI.timed("phase2a", async () => {
+			const designResult = await ApiClient.callAgent(
+				`당신은 비유 설계 전문가입니다. 에이전트 컨텍스트 패킷을 받으면:
+1. 구조 매핑 심화: 기술의 입력→처리→출력 흐름을 비유에서 완전히 재현
+2. 관계 보존 검증
+3. 반례 스트레스 테스트: 3개 이상
+4. 최종 출력: 검증된 구조 매핑표 + 비유 세계관 (300자 이내)
+
+중요: 모든 출력(confirmed_analogy, worldview, structure_mapping 등)은 반드시 한국어로 작성하라.`,
+				[JSON.stringify(this.results.contextPacket)],
+				{
+					thinking_budget: 2048,
+					schema_name: "analogy_design",
+					response_schema: {
+						type: "object",
+						properties: {
+							confirmed_analogy: { type: "string" },
+							worldview: { type: "string" },
+							structure_mapping: {
+								type: "array",
+								items: {
+									type: "object",
+									properties: {
+										tech: { type: "string" },
+										analogy: { type: "string" },
+										rationale: { type: "string" },
+									},
+									required: ["tech", "analogy", "rationale"],
+								},
+							},
+							counterexample_tests: {
+								type: "array",
+								items: {
+									type: "object",
+									properties: {
+										edge_case: { type: "string" },
+										maintained: { type: "boolean" },
+										mitigation: { type: "string" },
+									},
+									required: ["edge_case", "maintained", "mitigation"],
+								},
+							},
+							fitness_score: { type: "integer" },
+						},
+						required: [
+							"confirmed_analogy",
+							"worldview",
+							"structure_mapping",
+							"counterexample_tests",
+							"fitness_score",
+						],
+					},
+				},
+			);
+			this.results.design = designResult.data;
+			this._track(designResult.usage);
+
+			const verifyResult = await ApiClient.callAgent(
+				`당신은 품질 검증 전문가입니다. 4단계 검증(조사→측정→근거→판정).
+A1: fitness_score 7이상, A2: mapping 완전성, A3: 반례 3개이상, A4: 세계관 300자이내, A5: rationale 존재`,
+				[
+					JSON.stringify(this.results.design),
+					JSON.stringify(this.results.contextPacket),
+				],
+				{
+					thinking_budget: 2048,
+					temperature: 0.0,
+					schema_name: "verify_a",
+					response_schema: {
+						type: "object",
+						properties: {
+							phase: { type: "string" },
+							verdict: { type: "string" },
+							items: {
+								type: "array",
+								items: {
+									type: "object",
+									properties: {
+										id: { type: "string" },
+										name: { type: "string" },
+										inspect: { type: "string" },
+										measure: { type: "string" },
+										evidence: { type: "string" },
+										result: { type: "string" },
+										reason: { type: "string" },
+									},
+									required: [
+										"id",
+										"name",
+										"inspect",
+										"measure",
+										"evidence",
+										"result",
+										"reason",
+									],
+								},
+							},
+							fail_summary: { type: "array", items: { type: "string" } },
+						},
+						required: ["phase", "verdict", "items", "fail_summary"],
+					},
+				},
+			);
+			this.results.verifyA = verifyResult.data;
+			this._track(verifyResult.usage);
+
+			if (verifyResult.data.verdict === "FAIL") {
+				throw new Error(
+					`Phase 2a 검증 FAIL: ${verifyResult.data.fail_summary.join(", ")}`,
+				);
+			}
+		});
+	}
+
+	// Phase 2b: 글작성 + 이미지프롬프트 (병렬)
+	async _phase2b(tone, ratio) {
+		const [writerResult, imageResult] = await PipelineUI.timed("phase2b", () =>
+			Promise.all([
+				ApiClient.callAgent(
+					`당신은 비유 블로그 전문 작가입니다. 풍부한 시각 요소가 포함된 한국어 블로그를 작성합니다.
+## 소제목 규칙: 기계적 라벨("핵심 정리","대응표","마무리") 금지. 비유 스토리에서 자연스러운 한국어 제목 사용.
+## 시각화: 테이블 2+, ASCII 다이어그램 2+, 인용블록 3+, 구분선 4+, 소제목 6+
+## 분량: 친근 3000~5000 / 전문 4000~6000 / 유머 2500~4000
+
+## 절대 규칙 (렌더링 깨짐 방지)
+- ASCII 다이어그램(화살표, 박스, 파이프 문자 등)은 반드시 코드블록으로 감싸라. 코드블록 밖에 | 문자를 다이어그램 용도로 사용 금지.
+- 마크다운 테이블은 반드시 헤더행 + 구분행(|---|---|) + 데이터행 형식을 지켜라.
+- 모든 본문은 한국어로 작성하라. 기술 용어만 영문 병기 허용.
+
+톤: ${tone} | 메타표현 금지 | 하나의 비유 세계관으로 끝까지`,
+					[
+						JSON.stringify(this.results.contextPacket),
+						JSON.stringify(this.results.design),
+					],
+					{
+						thinking_budget: 2048,
+						schema_name: "blog_content",
+						response_schema: {
+							type: "object",
+							properties: {
+								front_half: { type: "string" },
+								back_half: { type: "string" },
+								char_count: { type: "integer" },
+							},
+							required: ["front_half", "back_half", "char_count"],
+						},
+					},
+				),
+				ApiClient.callAgent(
+					`당신은 이미지 프롬프트 전문가입니다. 영문 프롬프트 3개 생성.
+프롬프트 공식: [스타일]+[피사체]+[동작]+[배경]+[분위기]+[기술 요소 시각화]
+텍스트 규칙: 영문만 허용. 한글 금지. 끝에 "English text only, no Korean" 추가.
+톤: ${tone} | 비율: ${ratio}`,
+					[
+						JSON.stringify(this.results.contextPacket),
+						JSON.stringify(this.results.design),
+					],
+					{
+						thinking_budget: 0,
+						schema_name: "image_prompts",
+						response_schema: {
+							type: "object",
+							properties: {
+								intro_prompt: { type: "string" },
+								middle_prompt: { type: "string" },
+								outro_prompt: { type: "string" },
+							},
+							required: ["intro_prompt", "middle_prompt", "outro_prompt"],
+						},
+					},
+				),
+			]),
+		);
+		this.results.blog = writerResult.data;
+		this.results.prompts = imageResult.data;
+		this._track(writerResult.usage);
+		this._track(imageResult.usage);
+	}
+
+	// Phase 3a: 검증 + 재시도
+	async _phase3a(tone) {
+		const phase3aPrompt = `당신은 품질 검증 전문가입니다. 4단계 검증(조사→측정→근거→판정). 수정 제안 금지.
+B1~B12 검증. 톤: ${tone}. B2: 비유 용어는 기술 용어 아님. B4: 동의어 허용. B6: ±20% 허용.
+모든 항목에 inspect/measure/evidence 필수.`;
+		const phase3aSchema = {
+			type: "object",
+			properties: {
+				phase: { type: "string" },
+				verdict: { type: "string" },
+				items: {
+					type: "array",
+					items: {
+						type: "object",
+						properties: {
+							id: { type: "string" },
+							name: { type: "string" },
+							inspect: { type: "string" },
+							measure: { type: "string" },
+							evidence: { type: "string" },
+							result: { type: "string" },
+							reason: { type: "string" },
+						},
+						required: [
+							"id",
+							"name",
+							"inspect",
+							"measure",
+							"evidence",
+							"result",
+							"reason",
+						],
+					},
+				},
+				fail_summary: { type: "array", items: { type: "string" } },
+			},
+			required: ["phase", "verdict", "items", "fail_summary"],
+		};
+		const phase3aOpts = {
+			thinking_budget: 2048,
+			temperature: 0.0,
+			schema_name: "verification",
+			response_schema: phase3aSchema,
+		};
+
+		let verifyResult = await PipelineUI.timed("phase3a", () =>
+			ApiClient.callAgent(
+				phase3aPrompt,
+				[
+					JSON.stringify(this.results.design),
+					JSON.stringify(this.results.blog),
+					JSON.stringify(this.results.prompts),
+					JSON.stringify(this.results.contextPacket),
+				],
+				phase3aOpts,
+			),
+		);
+		this.results.verify = verifyResult.data;
+		this._track(verifyResult.usage);
+
+		let retryCount = 0;
+		while (verifyResult.data.verdict === "FAIL" && retryCount < 2) {
+			retryCount++;
+			console.warn(`Phase 3a FAIL (재시도 ${retryCount}/2)`);
+			const retry = await ApiClient.callAgent(
+				`이전 글이 검증 실패. FAIL 사유: ${(verifyResult.data.fail_summary || []).join(", ")}. FAIL 항목만 수정. 톤: ${tone}`,
+				[
+					JSON.stringify(this.results.contextPacket),
+					JSON.stringify(this.results.design),
+					JSON.stringify(this.results.blog),
+				],
+				{
+					thinking_budget: 2048,
+					schema_name: "blog_content",
+					response_schema: {
+						type: "object",
+						properties: {
+							front_half: { type: "string" },
+							back_half: { type: "string" },
+							char_count: { type: "integer" },
+						},
+						required: ["front_half", "back_half", "char_count"],
+					},
+				},
+			);
+			this.results.blog = retry.data;
+			this._track(retry.usage);
+
+			verifyResult = await ApiClient.callAgent(
+				phase3aPrompt,
+				[
+					JSON.stringify(this.results.design),
+					JSON.stringify(this.results.blog),
+					JSON.stringify(this.results.prompts),
+					JSON.stringify(this.results.contextPacket),
+				],
+				phase3aOpts,
+			);
+			this.results.verify = verifyResult.data;
+			this._track(verifyResult.usage);
+		}
+	}
+
+	// Phase 3b: 팩트체크
+	async _phase3b() {
+		const result = await PipelineUI.timed("phase3b", () =>
+			ApiClient.callAgent(
+				`당신은 기술 팩트체크 전문가입니다. 기술 주장을 CORRECT/INACCURATE/MISLEADING로 판정.`,
+				[
+					JSON.stringify(this.results.blog),
+					JSON.stringify(this.results.design),
+				],
+				{
+					thinking_budget: 4096,
+					temperature: 0.0,
+					schema_name: "factcheck",
+					response_schema: {
+						type: "object",
+						properties: {
+							verdict: { type: "string" },
+							total_claims: { type: "integer" },
+							claims: {
+								type: "array",
+								items: {
+									type: "object",
+									properties: {
+										quote: { type: "string" },
+										judgment: { type: "string" },
+										reason: { type: "string" },
+										correction: { type: "string" },
+									},
+									required: ["quote", "judgment", "reason"],
+								},
+							},
+							mapping_validity: {
+								type: "array",
+								items: {
+									type: "object",
+									properties: {
+										tech: { type: "string" },
+										analogy: { type: "string" },
+										valid: { type: "boolean" },
+										reason: { type: "string" },
+									},
+									required: ["tech", "analogy", "valid", "reason"],
+								},
+							},
+							corrections_needed: {
+								type: "array",
+								items: {
+									type: "object",
+									properties: {
+										original: { type: "string" },
+										corrected: { type: "string" },
+									},
+									required: ["original", "corrected"],
+								},
+							},
+						},
+						required: [
+							"verdict",
+							"total_claims",
+							"claims",
+							"mapping_validity",
+							"corrections_needed",
+						],
+					},
+				},
+			),
+		);
+		this.results.factcheck = result.data;
+		this._track(result.usage);
+	}
+
+	// Phase 3c: 이미지 생성 + 조립
+	async _phase3c(ratio) {
+		await PipelineUI.timed("phase3c", async () => {
+			const [introImg, middleImg, outroImg] = await Promise.all([
+				ApiClient.generateImage(this.results.prompts.intro_prompt, ratio),
+				ApiClient.generateImage(this.results.prompts.middle_prompt, ratio),
+				ApiClient.generateImage(this.results.prompts.outro_prompt, ratio),
+			]);
+			this.results.images = {
+				intro: introImg,
+				middle: middleImg,
+				outro: outroImg,
+			};
+
+			const [introUrl, middleUrl, outroUrl] = await Promise.all([
+				introImg ? ApiClient.uploadToImgur(introImg) : null,
+				middleImg ? ApiClient.uploadToImgur(middleImg) : null,
+				outroImg ? ApiClient.uploadToImgur(outroImg) : null,
+			]);
+			this.results.imageUrls = {
+				intro: introUrl,
+				middle: middleUrl,
+				outro: outroUrl,
+			};
+
+			const assembled = BlogAssembler.assemble(
+				this.results.blog,
+				this.results.prompts,
+				this.results.images,
+				this.results.imageUrls,
+			);
+			this.results.assembled = assembled.assembled;
+			this.results.assembledPublish = assembled.assembledPublish;
+			this.results.assembledText = assembled.assembledText;
+		});
+	}
+
+	// Phase 4: 평가
+	async _phase4() {
+		const result = await PipelineUI.timed("phase4", () =>
+			ApiClient.callAgent(
+				`당신은 기술 블로그 편집자입니다. 독자 관점 품질 채점.
+E1 비유 명확성(30%), E2 기술 깊이(25%), E3 가독성(20%), E4 흡인력(15%), E5 이미지-글 조화(10%). 통과: 3.5+`,
+				[this.results.assembledText, JSON.stringify(this.results.design)],
+				{
+					thinking_budget: 2048,
+					temperature: 0.0,
+					schema_name: "evaluation",
+					response_schema: {
+						type: "object",
+						properties: {
+							weighted_average: { type: "number" },
+							verdict: { type: "string" },
+							scores: {
+								type: "array",
+								items: {
+									type: "object",
+									properties: {
+										id: { type: "string" },
+										dimension: { type: "string" },
+										score: { type: "integer" },
+										rationale: { type: "string" },
+									},
+									required: ["id", "dimension", "score", "rationale"],
+								},
+							},
+							improvements: {
+								type: "array",
+								items: {
+									type: "object",
+									properties: {
+										what: { type: "string" },
+										how: { type: "string" },
+										why: { type: "string" },
+									},
+									required: ["what", "how", "why"],
+								},
+							},
+						},
+						required: ["weighted_average", "verdict", "scores", "improvements"],
+					},
+				},
+			),
+		);
+		this.results.eval = result.data;
+		this._track(result.usage);
+	}
+
+	// Phase 5: 발행
+	async _phase5(publishMode) {
+		await PipelineUI.timed("phase5", async () => {
+			if (publishMode === "local") {
+				this.results.published = { status: "local_only" };
+				return;
+			}
+			try {
+				if (!AuthManager.googleAccessToken)
+					await AuthManager.googleLogin(this.results);
+				if (!AuthManager.bloggerBlogId) {
+					const blogs = await AuthManager.getBloggerBlogs();
+					if (blogs.length > 0) {
+						AuthManager.bloggerBlogId = blogs[0].id;
+						sessionStorage.setItem(
+							"blogger_blog_id",
+							AuthManager.bloggerBlogId,
+						);
+					}
+				}
+				if (AuthManager.bloggerBlogId) {
+					const htmlContent = BlogAssembler.markdownToHtml(
+						this.results.assembledPublish || this.results.assembledText || "",
+					);
+					const title = `${this.results.design?.confirmed_analogy || "비유"} — ${this.results.contextPacket?.topic || "기술 블로그"}`;
+					const isDraft = publishMode === "draft";
+					const postUrl = `https://www.googleapis.com/blogger/v3/blogs/${AuthManager.bloggerBlogId}/posts${isDraft ? "?isDraft=true" : ""}`;
+
+					const res = await fetch(postUrl, {
+						method: "POST",
+						headers: {
+							Authorization: `Bearer ${AuthManager.googleAccessToken}`,
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify({
+							kind: "blogger#post",
+							title,
+							content: htmlContent,
+							labels: [
+								"기술블로그",
+								"비유",
+								this.results.contextPacket?.topic || "",
+							],
+						}),
+					});
+
+					if (res.ok) {
+						const post = await res.json();
+						this.results.published = {
+							status: "published",
+							url: post.url,
+							postId: post.id,
+						};
+					} else if (res.status === 401) {
+						AuthManager.googleAccessToken = null;
+						sessionStorage.removeItem("google_token");
+						this.results.published = { status: "ready", message: "토큰 만료" };
+					} else {
+						this.results.published = {
+							status: "ready",
+							message: `발행 실패 (${res.status})`,
+						};
+					}
+				}
+			} catch (e) {
+				this.results.published = { status: "ready", message: e.message };
+			}
+		});
+	}
+}
+
+</script>
+  <script>
+// app.js — 엔트리포인트, 이벤트 바인딩, 초기화
+const pipeline = new Pipeline();
+
+// ── 글로벌 함수 바인딩 (HTML onclick에서 호출) ──
+function startPipeline() {
+	pipeline.run();
+}
+function showTab(name) {
+	PipelineUI.showTab(
+		name,
+		document.querySelector(`.result-tab[onclick*="${name}"]`),
+	);
+}
+function copyBlog() {
+	BlogAssembler.copyBlog(pipeline.results);
+}
+function downloadAll() {
+	BlogAssembler.downloadAll(pipeline.results);
+}
+function publishToBlogger() {
+	AuthManager.publishToBlogger(pipeline.results);
+}
+function doGoogleLogin() {
+	AuthManager.doGoogleLogin();
+}
+
+// ── 초기화 ──
+(async function init() {
+	// 1. OAuth 리디렉트 토큰 확인
+	const hasToken = AuthManager.checkRedirectToken();
+
+	// 2. 로그인 상태 UI 업데이트
+	if (AuthManager.googleAccessToken) AuthManager.updateLoginUI();
+
+	// 3. 로그인만 한 경우 (파이프라인 결과 없이 복귀)
+	if (
+		AuthManager.googleAccessToken &&
+		localStorage.getItem("blog_login_only")
+	) {
+		localStorage.removeItem("blog_login_only");
+		AuthManager.updateLoginUI();
+		return;
+	}
+
+	// 4. 리디렉트 복귀 시 자동 발행
+	if (hasToken) {
+		const saved = localStorage.getItem("blog_results");
+		const publishMode = localStorage.getItem("blog_publish_mode") || "draft";
+		localStorage.removeItem("blog_results");
+		localStorage.removeItem("blog_publish_mode");
+
+		if (saved) {
+			pipeline.results = JSON.parse(saved);
+			PipelineUI.showResults(pipeline.results);
+			document.getElementById("pipeline").className = "pipeline active";
+			Config.PHASES.slice(0, 7).forEach((pid) => {
+				PipelineUI.setPhase(pid, "done");
+			});
+
+			PipelineUI.setPhase("phase5", "running");
+			try {
+				const blogs = await AuthManager.getBloggerBlogs();
+				if (blogs.length > 0) {
+					AuthManager.bloggerBlogId = blogs[0].id;
+					sessionStorage.setItem("blogger_blog_id", AuthManager.bloggerBlogId);
+				}
+				const htmlContent = BlogAssembler.markdownToHtml(
+					pipeline.results.assembledPublish ||
+						pipeline.results.assembledText ||
+						"",
+				);
+				const title = `${pipeline.results.design?.confirmed_analogy || "비유"} — ${pipeline.results.contextPacket?.topic || "기술 블로그"}`;
+				const isDraft = publishMode === "draft";
+				const postUrl = `https://www.googleapis.com/blogger/v3/blogs/${AuthManager.bloggerBlogId}/posts${isDraft ? "?isDraft=true" : ""}`;
+
+				const res = await fetch(postUrl, {
+					method: "POST",
+					headers: {
+						Authorization: `Bearer ${AuthManager.googleAccessToken}`,
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						kind: "blogger#post",
+						title,
+						content: htmlContent,
+						labels: [
+							"기술블로그",
+							"비유",
+							pipeline.results.contextPacket?.topic || "",
+						],
+					}),
+				});
+
+				if (res.ok) {
+					const post = await res.json();
+					pipeline.results.published = {
+						status: "published",
+						url: post.url,
+						postId: post.id,
+					};
+					PipelineUI.setPhase("phase5", "done");
+					document.getElementById("publishBtn").textContent =
+						"발행 완료 — 보기";
+					document.getElementById("publishBtn").onclick = () =>
+						window.open(post.url, "_blank");
+					alert(`발행 완료!\n${post.url}`);
+				} else {
+					PipelineUI.setPhase("phase5", "fail");
+				}
+			} catch (e) {
+				PipelineUI.setPhase("phase5", "fail");
+			}
+		}
+	}
+})();
+
+// ── Enter 키 지원 ──
+document.getElementById("topic").addEventListener("keydown", (e) => {
+	if (e.key === "Enter") startPipeline();
+});
+
+</script>
+</body>
+</html>
